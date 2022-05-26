@@ -1,3 +1,3 @@
 # memory_library
 
-Library for memory drivers like hyperram
+Library for FPGA memory drivers
