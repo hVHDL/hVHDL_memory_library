@@ -7,9 +7,11 @@ from vunit import VUnit
 ROOT = Path(__file__).resolve().parent
 VU = VUnit.from_argv()
 
-lib = VU.add_library("default")
+lib = VU.add_library("memory")
+lib.add_source_files(ROOT / "fpga_ram" / "*.vhd")
+
 lib.add_source_files(ROOT / "hyperram" / "*.vhd")
 lib.add_source_files(ROOT / "hyperram/hyperram_simulation" / "*.vhd")
-# mathlib.add_source_files(ROOT / "multiplier" / "simulation" / "tb_multiplier.vhd") 
+
 
 VU.main()
