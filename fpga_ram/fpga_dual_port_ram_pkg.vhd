@@ -26,7 +26,7 @@ package fpga_dual_port_ram_pkg is
         data : lut_integer;
 
         -- write port
-        write_requested_with_1 : std_logic;
+        write_requested_with_1 : std_logic_vector(1 downto 0);
         write_is_ready         : boolean;
         write_buffer           : integer;
         write_address_buffer   : address_integer;
@@ -35,7 +35,7 @@ package fpga_dual_port_ram_pkg is
 
     constant init_dual_port_ram : ram_record := (
         0, '0', false, 0,
-       '0', false, 0, 0,
+       "00", false, 0, 0,
        sine_table_entries);
 
 ------------------------------------------------------------------------
@@ -56,6 +56,17 @@ package fpga_dual_port_ram_pkg is
 ------------------------------------------------------------------------
     function ram_is_ready ( ram_object : ram_record)
         return boolean;
+------------------------------------------------------------------------
+    procedure write_data_to_ram (
+        signal ram_object : inout ram_record;
+        address : in integer;
+        data    : in integer);
+
+    procedure write_data_to_ram (
+        signal counter_to_be_incremented_at_write : inout integer;
+        signal ram_object : inout ram_record;
+        address : in integer;
+        data    : in integer);
 ------------------------------------------------------------------------
 
 ------------------------------------------------------------------------
@@ -85,16 +96,20 @@ package body fpga_dual_port_ram_pkg is
     (
         signal ram_object : inout ram_record
     ) is
-        constant sines : integer_array := sine_table_entries;
     begin
 
         ram_object.read_requested_with_1 <= '0';
-        ram_object.data_is_ready_to_be_read         <= ram_object.read_requested_with_1 = '1';
+        ram_object.data_is_ready_to_be_read <= ram_object.read_requested_with_1 = '1';
 
         if ram_object.read_requested_with_1 = '1' then
-            ram_object.data <= sines(ram_object.read_address);
+            ram_object.data <= ram_object.ram_memory(ram_object.read_address);
         end if;
-        
+
+        ram_object.write_requested_with_1 <= ram_object.write_requested_with_1(0) & '0';
+        if ram_object.write_requested_with_1(1) = '1' then
+            ram_object.ram_memory(ram_object.write_address_buffer) <= ram_object.write_buffer;
+        end if;
+
     end create_dual_port_ram;
 ------------------------------------------------------------------------
     procedure request_data_from_ram
@@ -147,7 +162,9 @@ package body fpga_dual_port_ram_pkg is
         data    : in integer
     ) is
     begin
-        ram_object.write_requested_with_1 <= '1';
+        ram_object.write_requested_with_1(0) <= '1';
+        ram_object.write_buffer <= data;
+        ram_object.write_address_buffer <= address;
         
     end write_data_to_ram;
 
@@ -159,6 +176,8 @@ package body fpga_dual_port_ram_pkg is
         data    : in integer
     ) is
     begin
+        counter_to_be_incremented_at_write <= counter_to_be_incremented_at_write + 1;
+        write_data_to_ram(ram_object, address, data);
         
     end write_data_to_ram;
 ------------------------------------------------------------------------

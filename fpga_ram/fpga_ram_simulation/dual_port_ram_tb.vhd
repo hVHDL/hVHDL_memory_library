@@ -28,6 +28,8 @@ architecture vunit_simulation of dual_port_ram_tb is
     signal ram_read_counter : integer range 0 to 7 := 0;
     signal delay_counter : integer := 0;
 
+    signal ram_write_counter : integer range 0 to 7 := 7;
+
 
 begin
 
@@ -67,12 +69,30 @@ begin
                 WHEN 4 => request_data_from_ram_and_increment(ram_read_counter, ram1, 9);
                 WHEN 5 => request_data_from_ram_and_increment(ram_read_counter, ram1, 10);
                 WHEN 6 => request_data_from_ram_and_increment(ram_read_counter, ram1, 11);
+                          ram_write_counter <= 0;
                 WHEN 7 => -- do nothing
             end CASE;
 
             if ram_is_ready(ram1) then
                 data_from_ram1 <= get_ram_data(ram1);
             end if;
+
+            CASE ram_write_counter is
+                WHEN 0 => write_data_to_ram(ram_write_counter, ram1, 5, 100);
+                WHEN 1 => write_data_to_ram(ram_write_counter, ram1, 6, 101);
+                WHEN 2 => write_data_to_ram(ram_write_counter, ram1, 7, 102);
+                          delay_counter <= 5;
+                WHEN 3 => 
+                    if delay_counter = 1 then
+                        write_data_to_ram(ram_write_counter, ram1, 8, 103);
+                    end if;
+                WHEN 4 => write_data_to_ram(ram_write_counter, ram1, 9, 104);
+                WHEN 5 => write_data_to_ram(ram_write_counter, ram1, 10, 105);
+                WHEN 6 => write_data_to_ram(ram_write_counter, ram1, 11, 106);
+                          ram_read_counter <= 0;
+                WHEN 7 => -- do nothing
+            end CASE;
+
 
 
         end if; -- rising_edge
