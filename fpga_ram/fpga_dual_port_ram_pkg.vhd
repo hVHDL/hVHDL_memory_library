@@ -6,6 +6,7 @@ library ieee;
 package fpga_dual_port_ram_pkg is
 
     constant lookup_table_bits : integer := 2**10;
+    subtype address_integer is integer range 0 to 2**10-1;
     subtype lut_integer is integer range -2**16 to 2**16-1;
 
     type integer_array is array (integer range <>) of lut_integer;
@@ -19,15 +20,16 @@ package fpga_dual_port_ram_pkg is
     constant sine_table_entries : integer_array(0 to lookup_table_bits-1) := calculate_ram_initial_values(lookup_table_bits,16); 
 
     type ram_record is record
-        read_address : integer range 0 to lookup_table_bits;
+        read_address : address_integer;
         read_requested_with_1 : std_logic;
         data_is_ready_to_be_read : boolean;
         data : lut_integer;
 
+        -- write port
         write_requested_with_1 : std_logic;
         write_is_ready         : boolean;
         write_buffer           : integer;
-        write_address_buffer   : integer;
+        write_address_buffer   : address_integer;
         ram_memory : integer_array(0 to lookup_table_bits-1);
     end record;
 
