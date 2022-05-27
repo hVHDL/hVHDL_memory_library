@@ -36,6 +36,11 @@ package fpga_dual_port_ram_pkg is
     procedure request_data_from_ram (
         signal ram_object : out ram_record;
         address : integer);
+
+    procedure request_data_from_ram_and_increment (
+        signal ram_read_counter : inout integer;
+        signal ram_object : out ram_record;
+        address : integer);
 ------------------------------------------------------------------------
     function get_ram_data ( ram_object : ram_record)
         return integer;
@@ -61,7 +66,7 @@ package body fpga_dual_port_ram_pkg is
         variable sine_lut : integer_array(0 to number_of_entries-1);
     begin
         for i in 0 to number_of_entries-1 loop
-            sine_lut(i) := 44252;
+            sine_lut(i) := 44252 + i;
         end loop;
         return sine_lut;
 
@@ -92,6 +97,18 @@ package body fpga_dual_port_ram_pkg is
         ram_object.read_requested_with_1 <= '1';
         ram_object.address <= address;
     end request_data_from_ram;
+------------------------------------------------------------------------
+    procedure request_data_from_ram_and_increment
+    (
+        signal ram_read_counter : inout integer;
+        signal ram_object : out ram_record;
+        address : integer
+    ) is
+    begin
+        ram_read_counter <= ram_read_counter + 1;
+        ram_object.read_requested_with_1 <= '1';
+        ram_object.address <= address;
+    end request_data_from_ram_and_increment;
 ------------------------------------------------------------------------
     function ram_is_ready
     (
