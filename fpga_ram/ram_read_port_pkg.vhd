@@ -29,7 +29,7 @@ package ram_read_port_pkg is
     constant init_ram_read_port : ram_read_port_record := (0, '0', false, 0);
 
 ------------------------------------------------------------------------
-    procedure create_dual_port_ram (
+    procedure create_ram_read_port (
         signal ram_read_object : inout ram_read_port_record;
         ram_memory : integer_array);
 ------------------------------------------------------------------------
@@ -43,6 +43,10 @@ package ram_read_port_pkg is
 ------------------------------------------------------------------------
     function get_ram_data ( ram_read_object : ram_read_port_record)
         return integer;
+------------------------------------------------------------------------
+    procedure request_data_from_ram (
+        signal ram_read_object : out ram_read_port_record;
+        address : integer);
 ------------------------------------------------------------------------
 end package ram_read_port_pkg;
 
@@ -66,7 +70,7 @@ package body ram_read_port_pkg is
 
     end calculate_ram_initial_values;
 ------------------------------------------------------------------------
-    procedure create_dual_port_ram
+    procedure create_ram_read_port
     (
         signal ram_read_object : inout ram_read_port_record;
         ram_memory : integer_array
@@ -81,7 +85,7 @@ package body ram_read_port_pkg is
             ram_read_object.data_is_ready_to_be_read <= ram_read_object.read_requested_with_1 = '1';
         end if;
 
-    end create_dual_port_ram;
+    end create_ram_read_port;
 ------------------------------------------------------------------------
     procedure request_data_from_ram
     (

@@ -54,7 +54,7 @@ begin
         if rising_edge(simulator_clock) then
             simulation_counter <= simulation_counter + 1;
 
-            create_dual_port_ram(ram1, ram_memory);
+            create_ram_read_port(ram1, ram_memory);
 
             if delay_counter > 0 then
                 delay_counter <= delay_counter -1 ;
