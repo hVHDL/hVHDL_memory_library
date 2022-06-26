@@ -28,22 +28,24 @@ package fpga_dual_port_ram_pkg is
 
     constant init_ram_read : ram_read_port_record := (0, '0', false, 0);
 
-    type ram_record is record
-
-        ram_read_port : ram_read_port_record;
-
-        -- write port
+    type ram_write_port_record is record
+        write_address          : address_integer;
         write_requested_with_1 : std_logic_vector(1 downto 0);
         write_is_ready         : boolean;
         write_buffer           : integer;
-        write_address_buffer   : address_integer;
+    end record;
 
-        ram_memory : integer_array(0 to lookup_table_bits-1);
+    constant init_ram_write_port : ram_write_port_record := (0, "00", false, 0);
+
+    type ram_record is record
+        ram_read_port  : ram_read_port_record;
+        ram_write_port : ram_write_port_record;
+        ram_memory     : integer_array(0 to lookup_table_bits-1);
     end record;
 
     constant init_dual_port_ram : ram_record := (
         init_ram_read,
-       "00", false, 0, 0,
+       init_ram_write_port,
        sine_table_entries);
 
 ------------------------------------------------------------------------
@@ -113,9 +115,9 @@ package body fpga_dual_port_ram_pkg is
             ram_object.ram_read_port.data <= ram_object.ram_memory(ram_object.ram_read_port.read_address);
         end if;
 
-        ram_object.write_requested_with_1 <= ram_object.write_requested_with_1(0) & '0';
-        if ram_object.write_requested_with_1(1) = '1' then
-            ram_object.ram_memory(ram_object.write_address_buffer) <= ram_object.write_buffer;
+        ram_object.ram_write_port.write_requested_with_1 <= ram_object.ram_write_port.write_requested_with_1(0) & '0';
+        if ram_object.ram_write_port.write_requested_with_1(1) = '1' then
+            ram_object.ram_memory(ram_object.ram_write_port.write_address) <= ram_object.ram_write_port.write_buffer;
         end if;
 
     end create_dual_port_ram;
@@ -170,9 +172,9 @@ package body fpga_dual_port_ram_pkg is
         data    : in integer
     ) is
     begin
-        ram_object.write_requested_with_1(0) <= '1';
-        ram_object.write_buffer <= data;
-        ram_object.write_address_buffer <= address;
+        ram_object.ram_write_port.write_requested_with_1(0) <= '1';
+        ram_object.ram_write_port.write_buffer <= data;
+        ram_object.ram_write_port.write_address <= address;
         
     end write_data_to_ram;
 
