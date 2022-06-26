@@ -7,6 +7,7 @@ library vunit_lib;
 context vunit_lib.vunit_context;
 
     use work.ram_read_port_pkg.all;
+    use work.ram_configuration_pkg.all;
 
 entity ram_read_tb is
   generic (runner_cfg : string);

@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parent
 VU = VUnit.from_argv()
 
 lib = VU.add_library("memory")
+lib.add_source_files(ROOT / "fpga_ram/ram_configuration/ram_configuration_16x1024_pkg.vhd")
 lib.add_source_files(ROOT / "fpga_ram" / "*.vhd")
 lib.add_source_files(ROOT / "fpga_ram/fpga_ram_simulation" / "*.vhd")
 

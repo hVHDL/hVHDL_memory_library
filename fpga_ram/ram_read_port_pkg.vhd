@@ -3,21 +3,9 @@ library ieee;
     use ieee.numeric_std.all;
     use ieee.math_real.all;
 
+    use work.ram_configuration_pkg.all;
+
 package ram_read_port_pkg is
-
-    constant lookup_table_bits : integer := 2**10;
-    subtype address_integer is integer range 0 to 2**10-1;
-    subtype lut_integer is integer range -2**16 to 2**16-1;
-
-    type integer_array is array (integer range <>) of lut_integer;
-------------------------------------------------------------------------
-    function calculate_ram_initial_values (
-        number_of_entries : natural;
-        number_of_bits    : natural range 8 to 32)
-    return integer_array;
-------------------------------------------------------------------------
-
-    constant init_ram_data_with_indices : integer_array(0 to lookup_table_bits-1) := calculate_ram_initial_values(lookup_table_bits,16); 
 
     type ram_read_port_record is record
         read_address             : address_integer;
@@ -53,22 +41,6 @@ end package ram_read_port_pkg;
 ------------------------------------------------------------------------
 package body ram_read_port_pkg is
 
-------------------------------------------------------------------------
-    function calculate_ram_initial_values
-    (
-        number_of_entries : natural;
-        number_of_bits : natural range 8 to 32
-    )
-    return integer_array
-    is
-        variable sine_lut : integer_array(0 to number_of_entries-1);
-    begin
-        for i in 0 to number_of_entries-1 loop
-            sine_lut(i) := i;
-        end loop;
-        return sine_lut;
-
-    end calculate_ram_initial_values;
 ------------------------------------------------------------------------
     procedure create_ram_read_port
     (

@@ -3,7 +3,7 @@ library ieee;
     use ieee.numeric_std.all;
     use ieee.math_real.all;
 
-    use work.ram_read_port_pkg.all;
+    use work.ram_configuration_pkg.all;
 
 package ram_write_port_pkg is
 

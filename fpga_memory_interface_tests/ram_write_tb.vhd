@@ -8,6 +8,7 @@ context vunit_lib.vunit_context;
 
     use work.ram_read_port_pkg.all;
     use work.ram_write_port_pkg.all;
+    use work.ram_configuration_pkg.all;
 
 entity ram_write_tb is
   generic (runner_cfg : string);
@@ -28,7 +29,7 @@ architecture vunit_simulation of ram_write_tb is
     signal ram_read_counter : integer := 7;
     signal delay_counter : integer := 0;
 
-    signal ram_memory : integer_array(0 to lookup_table_bits - 1) := init_ram_data_with_indices;
+    signal ram_memory : integer_array(0 to lookup_table_size - 1) := init_ram_data_with_indices;
 
     signal ram_write_port : ram_write_port_record := init_ram_write_port;
 
