@@ -24,19 +24,14 @@ architecture vunit_simulation of ram_read_tb is
 
     signal ram1 : ram_read_port_record := init_ram_read_port;
     signal data_from_ram1 : integer :=0;
-    signal ram_request_counter : integer range 0 to 7 := 0;
     signal ram_read_counter : integer := 0;
     signal delay_counter : integer := 0;
-
-    signal ram_write_counter : integer range 0 to 7 := 7;
 
     constant ram_memory : integer_array := sine_table_entries;
     constant ram_test_indices : integer_array(0 to 7) := (5, 25, 55, 101, 3, 457, 9, 15);
 
     signal ready_counter : integer := 0;
-
     signal ram_was_read : boolean := false;
-
 
 begin
 
@@ -66,26 +61,26 @@ begin
             end if;
 
             CASE ram_read_counter is
-                WHEN 0 => request_data_from_ram_and_increment(ram_read_counter, ram1, ram_test_indices(0));
-                WHEN 1 => request_data_from_ram_and_increment(ram_read_counter, ram1, ram_test_indices(1));
-                WHEN 2 => request_data_from_ram_and_increment(ram_read_counter, ram1, ram_test_indices(2));
+                WHEN 0 => request_data_from_ram_and_increment(ram_read_counter, ram1, ram_test_indices(ram_read_counter mod ram_test_indices'length));
+                WHEN 1 => request_data_from_ram_and_increment(ram_read_counter, ram1, ram_test_indices(ram_read_counter mod ram_test_indices'length));
+                WHEN 2 => request_data_from_ram_and_increment(ram_read_counter, ram1, ram_test_indices(ram_read_counter mod ram_test_indices'length));
                           delay_counter <= 5;
                 WHEN 3 => 
                     if delay_counter = 1 then
-                        request_data_from_ram_and_increment(ram_read_counter, ram1, ram_test_indices(3));
+                        request_data_from_ram_and_increment(ram_read_counter, ram1, ram_test_indices(ram_read_counter mod ram_test_indices'length));
                     end if;
-                WHEN 4 => request_data_from_ram_and_increment(ram_read_counter, ram1, ram_test_indices(4));
-                WHEN 5 => request_data_from_ram_and_increment(ram_read_counter, ram1, ram_test_indices(5));
-                WHEN 6 => request_data_from_ram_and_increment(ram_read_counter, ram1, ram_test_indices(6));
-                WHEN 7 => -- do nothing
+                WHEN 4 => request_data_from_ram_and_increment(ram_read_counter, ram1, ram_test_indices(ram_read_counter mod ram_test_indices'length));
+                WHEN 5 => request_data_from_ram_and_increment(ram_read_counter, ram1, ram_test_indices(ram_read_counter mod ram_test_indices'length));
+                WHEN 6 => request_data_from_ram_and_increment(ram_read_counter, ram1, ram_test_indices(ram_read_counter mod ram_test_indices'length));
+                WHEN 7 => request_data_from_ram_and_increment(ram_read_counter, ram1, ram_test_indices(ram_read_counter mod ram_test_indices'length));
                 WHEN others => -- do nothing
             end CASE;
 
             if ram_read_is_ready(ram1) then
+                check(get_ram_data(ram1) = ram_test_indices(ready_counter mod ram_test_indices'length), "should be same");
                 data_from_ram1 <= get_ram_data(ram1);
-                check(get_ram_data(ram1) = ram_test_indices(ready_counter mod 7), "should be same");
-                ready_counter <= (ready_counter + 1) mod 7;
-                ram_was_read <= true;
+                ready_counter  <= (ready_counter + 1) mod ram_test_indices'length;
+                ram_was_read   <= true;
             end if;
 
         end if; -- rising_edge
