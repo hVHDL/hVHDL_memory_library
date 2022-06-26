@@ -27,7 +27,7 @@ architecture vunit_simulation of ram_read_tb is
     signal ram_read_counter : integer := 0;
     signal delay_counter : integer := 0;
 
-    constant ram_memory : integer_array := sine_table_entries;
+    constant ram_memory : integer_array := init_ram_data_with_indices;
     constant ram_test_indices : integer_array(0 to 7) := (5, 25, 55, 101, 3, 457, 9, 15);
 
     signal ready_counter : integer := 0;

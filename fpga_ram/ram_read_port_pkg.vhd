@@ -17,7 +17,7 @@ package ram_read_port_pkg is
     return integer_array;
 ------------------------------------------------------------------------
 
-    constant sine_table_entries : integer_array(0 to lookup_table_bits-1) := calculate_ram_initial_values(lookup_table_bits,16); 
+    constant init_ram_data_with_indices : integer_array(0 to lookup_table_bits-1) := calculate_ram_initial_values(lookup_table_bits,16); 
 
     type ram_read_port_record is record
         read_address             : address_integer;
