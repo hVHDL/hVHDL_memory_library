@@ -93,8 +93,6 @@ begin
                 WHEN 7 => -- do nothing
             end CASE;
 
-
-
         end if; -- rising_edge
     end process stimulus;	
 ------------------------------------------------------------------------

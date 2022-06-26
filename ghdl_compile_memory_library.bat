@@ -6,4 +6,5 @@ SET project_root=%%F
 )
 SET source=%project_root%/../memory_library
 
+ghdl -a --ieee=synopsys --std=08 %source%/fpga_ram/ram_read_port_pkg.vhd
 ghdl -a --ieee=synopsys --std=08 %source%/fpga_ram/fpga_dual_port_ram_pkg.vhd
