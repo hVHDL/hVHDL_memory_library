@@ -15,6 +15,8 @@ lib.add_source_files(ROOT / "fpga_ram/fpga_ram_simulation" / "*.vhd")
 lib.add_source_files(ROOT / "hyperram" / "*.vhd")
 lib.add_source_files(ROOT / "hyperram/hyperram_simulation" / "*.vhd")
 
+lib.add_source_files(ROOT / "sorting_algorithms/sorting_simulation" / "*.vhd")
+
 lib.add_source_files(ROOT / "fpga_memory_interface_tests" / "*.vhd")
 
 VU.main()
