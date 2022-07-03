@@ -13,7 +13,7 @@ end;
 architecture vunit_simulation of bubblesort_tb is
 
     constant clock_period      : time    := 1 ns;
-    constant simtime_in_clocks : integer := 500;
+    constant simtime_in_clocks : integer := 50;
     
     signal simulator_clock     : std_logic := '0';
     signal simulation_counter  : natural   := 0;
@@ -65,12 +65,12 @@ begin
             i1 := (simulation_counter + 1) mod int_array'length;
             if i1 = 0 then
                 i1 := 1;
-                i := 0;
+                i  := 0;
             end if;
 
             if sorted_memory(i) > sorted_memory(i1) then
                 sorted_memory(i1) <= sorted_memory(i);
-                sorted_memory(i) <= sorted_memory(i1);
+                sorted_memory(i)  <= sorted_memory(i1);
             end if;
         end if; -- rising_edge
     end process stimulus;	
