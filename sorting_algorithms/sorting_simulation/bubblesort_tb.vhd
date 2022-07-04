@@ -64,7 +64,8 @@ begin
     begin
         test_runner_setup(runner, runner_cfg);
         wait for simtime_in_clocks*clock_period;
-        check(sorted_memory = (0,1,2,3,4,5,6,7), "sort failed");
+        check(sorted_memory      = (0,1,2,3,4,5,6,7), "sort failed with test vector");
+        check(ram_memory(0 to 7) = (0,1,2,3,4,5,6,7), "sort failed with ram sort");
         test_runner_cleanup(runner); -- Simulation ends here
         wait;
     end process simtime;	
@@ -85,6 +86,27 @@ begin
             create_ram_read_port(read_port2       , ram_memory);
             create_ram_write_port(ram_write_port2 , ram_memory);
 
+            ------------- test bubble sort in memory ---------
+            swap_requested <= false;
+            if ram_read_is_ready(read_port1) or simulation_counter = 0 then
+                swap_requested <= true;
+                ram_address <= (ram_address + 1) mod 7;
+                if (ram_address + 1) mod 7 = 0 then
+                    ram_address <= 0;
+                end if;
+                if get_ram_data(read_port1) > get_ram_data(read_port2) then
+                    write_data_to_ram(ram_write_port1, ram_address, get_ram_data(read_port2));
+                    write_data_to_ram(ram_write_port2, ram_address + 1, get_ram_data(read_port1));
+                end if;
+            end if;
+
+            if swap_requested then
+                request_data_from_ram(read_port1, ram_address);
+                request_data_from_ram(read_port2, ram_address + 1);
+            end if;
+            --------------------------------------------------
+
+            ------------- test with a simple vector ----------
             i  := simulation_counter mod int_array'length;
             i1 := (simulation_counter + 1) mod int_array'length;
             if i1 = 0 then
@@ -96,24 +118,8 @@ begin
                 sorted_memory(i1) <= sorted_memory(i);
                 sorted_memory(i)  <= sorted_memory(i1);
             end if;
+            --------------------------------------------------
 
-            swap_requested <= false;
-            if ram_read_is_ready(read_port1) or simulation_counter = 0 then
-                swap_requested <= true;
-                ram_address <= (ram_address + 1) mod 7;
-                if (ram_address + 1) mod 7 = 0 then
-                    ram_address <= 0;
-                end if;
-                if get_ram_data(read_port1) > get_ram_data(read_port2) then
-                        write_data_to_ram(ram_write_port1, ram_address, get_ram_data(read_port2));
-                        write_data_to_ram(ram_write_port2, ram_address + 1, get_ram_data(read_port1));
-                end if;
-            end if;
-
-            if swap_requested then
-                request_data_from_ram(read_port1, ram_address);
-                request_data_from_ram(read_port2, ram_address + 1);
-            end if;
 
         end if; -- rising_edge
     end process stimulus;	
