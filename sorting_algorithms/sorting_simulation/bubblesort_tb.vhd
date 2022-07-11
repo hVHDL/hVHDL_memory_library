@@ -2,6 +2,7 @@ LIBRARY ieee  ;
     USE ieee.NUMERIC_STD.all  ; 
     USE ieee.std_logic_1164.all  ; 
     use ieee.math_real.all;
+    use std.textio.all; 
 
 library vunit_lib;
 context vunit_lib.vunit_context;
@@ -57,6 +58,24 @@ architecture vunit_simulation of bubblesort_tb is
     signal ram_address : integer range 0 to 7 := 1;
 
     signal swap_requested : boolean := false;
+
+    
+    file file_handler     : text open write_mode is "writefile.dat";
+
+    procedure write_file
+    (
+        file wfile : text
+    ) is
+        variable angle : real := 0.0;
+        variable row : line;
+    begin
+        
+        for i in 0 to 32767 loop
+            write(wfile, real'image(sin(real(i)/32767.0*2.0*math_pi)) & " ");
+        end loop;
+
+    end write_file;
+
 begin
 
 ------------------------------------------------------------------------
@@ -66,6 +85,7 @@ begin
         wait for simtime_in_clocks*clock_period;
         check(sorted_memory      = (0,1,2,3,4,5,6,7), "sort failed with test vector");
         check(ram_memory(0 to 7) = (0,1,2,3,4,5,6,7), "sort failed with ram sort");
+        write_file(file_handler);
         test_runner_cleanup(runner); -- Simulation ends here
         wait;
     end process simtime;	
@@ -77,6 +97,9 @@ begin
         variable i, i1 : integer := 0;
         variable j, j1 : integer := 0;
 
+        Variable row          : line;
+        Variable v_data_read  : integer;
+
     begin
         if rising_edge(simulator_clock) then
             simulation_counter <= simulation_counter + 1;
@@ -85,6 +108,7 @@ begin
             create_ram_write_port(ram_write_port1 , ram_memory);
             create_ram_read_port(read_port2       , ram_memory);
             create_ram_write_port(ram_write_port2 , ram_memory);
+
 
             ------------- test bubble sort in memory ---------
             swap_requested <= false;
