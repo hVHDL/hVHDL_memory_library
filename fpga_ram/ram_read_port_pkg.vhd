@@ -36,6 +36,12 @@ package ram_read_port_pkg is
         signal ram_read_object : out ram_read_port_record;
         address : integer);
 ------------------------------------------------------------------------
+    function get_read_pointer ( self : ram_read_port_record)
+        return integer;
+------------------------------------------------------------------------
+    function read_is_requested ( self : ram_read_port_record)
+        return boolean;
+------------------------------------------------------------------------
 end package ram_read_port_pkg;
 
 ------------------------------------------------------------------------
@@ -58,6 +64,15 @@ package body ram_read_port_pkg is
         end if;
 
     end create_ram_read_port;
+------------------------------------------------------------------------
+    function read_is_requested
+    (
+        self : ram_read_port_record
+    )
+    return boolean is
+    begin
+        return self.read_requested_with_1 = '1';
+    end read_is_requested;
 ------------------------------------------------------------------------
     procedure request_data_from_ram
     (
@@ -100,5 +115,15 @@ package body ram_read_port_pkg is
     begin
         return ram_read_object.data;
     end get_ram_data;
+------------------------------------------------------------------------
+    function get_read_pointer
+    (
+        self : ram_read_port_record
+    )
+    return integer
+    is
+    begin
+        return self.read_address;
+    end get_read_pointer;
 ------------------------------------------------------------------------
 end package body ram_read_port_pkg;
