@@ -15,7 +15,8 @@ package ram_configuration_pkg is
     function calculate_ram_initial_values ( number_of_entries : natural)
         return integer_array;
 ------------------------------------------------------------------------
-    constant init_ram_data_with_indices : integer_array(0 to lookup_table_size-1) := calculate_ram_initial_values(lookup_table_size); 
+    function init_ram_data_with_indices return integer_array;
+    constant init_ram_data : integer_array(0 to lookup_table_size-1) := (others => 0);
 ------------------------------------------------------------------------
 end package ram_configuration_pkg;
 
@@ -36,4 +37,11 @@ package body ram_configuration_pkg is
 
     end calculate_ram_initial_values;
 ------------------------------------------------------------------------
+    function init_ram_data_with_indices
+    return integer_array
+    is
+    begin
+        return calculate_ram_initial_values(lookup_table_size);
+        
+    end init_ram_data_with_indices;
 end package body ram_configuration_pkg;

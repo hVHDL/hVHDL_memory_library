@@ -59,7 +59,6 @@ package body hyperram_interface_registers_pkg is
     is
         variable return_value : hyperram_data_array;
     begin
-        -- return_value(0) := (
 
         return return_value;
 

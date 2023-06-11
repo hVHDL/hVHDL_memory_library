@@ -19,4 +19,6 @@ lib.add_source_files(ROOT / "sorting_algorithms/sorting_simulation" / "*.vhd")
 
 lib.add_source_files(ROOT / "fpga_memory_interface_tests" / "*.vhd")
 
+lib.add_source_files(ROOT / "testbench/hyperram/hyperam_tb.vhd")
+
 VU.main()

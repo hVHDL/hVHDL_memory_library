@@ -1,10 +1,6 @@
 echo off
 
-echo %project_root%
-FOR /F "tokens=* USEBACKQ" %%F IN (`git rev-parse --show-toplevel`) DO (
-SET project_root=%%F
-)
-SET source=%project_root%/
+SET source=%1
 
 ghdl -a --ieee=synopsys --std=08 %source%/fpga_ram/ram_configuration/ram_configuration_16x1024_pkg.vhd
 ghdl -a --ieee=synopsys --std=08 %source%/fpga_ram/ram_read_port_pkg.vhd

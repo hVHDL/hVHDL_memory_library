@@ -17,7 +17,7 @@ package fpga_dual_port_ram_pkg is
     return integer_array;
 ------------------------------------------------------------------------
 
-    constant sine_table_entries : integer_array(0 to lookup_table_bits-1) := calculate_ram_initial_values(lookup_table_bits,16); 
+    function sine_table_entries return integer_array;
 
     type ram_read_port_record is record
         read_address             : address_integer;
@@ -43,10 +43,7 @@ package fpga_dual_port_ram_pkg is
         ram_memory     : integer_array(0 to lookup_table_bits-1);
     end record;
 
-    constant init_dual_port_ram : ram_record := (
-        init_ram_read,
-       init_ram_write_port,
-       sine_table_entries);
+    function init_dual_port_ram return ram_record;
 
 ------------------------------------------------------------------------
     procedure create_dual_port_ram (
@@ -191,4 +188,18 @@ package body fpga_dual_port_ram_pkg is
         
     end write_data_to_ram;
 ------------------------------------------------------------------------
+    function sine_table_entries
+    return integer_array
+    is
+    begin
+        return calculate_ram_initial_values(lookup_table_bits,16);
+        
+    end sine_table_entries;
+------------------------------------------------------------------------
+    function init_dual_port_ram return ram_record
+    is
+    begin
+        return ( init_ram_read, init_ram_write_port, sine_table_entries);
+        
+    end init_dual_port_ram;
 end package body fpga_dual_port_ram_pkg;
