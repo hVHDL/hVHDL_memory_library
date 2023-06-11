@@ -13,10 +13,11 @@ package hyperram_driver_pkg is
         data_out : std_logic_vector(15 downto 0);
         bus_is_out_when_1 : std_logic;
         --
+        transfer_counter : natural;
         shift_register   : std16_array;
         transmit_counter : natural;
     end record;
-    constant init_hyperram : hyperram_driver_record := ('0',(others => '0'), '0', (others => '0'), '0', (others => (others => '0')), 0);
+    constant init_hyperram : hyperram_driver_record := ('0',(others => '0'), '0', (others => '0'), '0', 0, (others => (others => '0')), 0);
 
 ------------------------------------------------------------------------
     procedure create_hyperram_driver (
@@ -43,14 +44,18 @@ package body hyperram_driver_pkg is
         self <= init_hyperram;
 
         if self.bus_is_out_when_1 = '0' then
-            shift_data := (others => '0');
-        else
             shift_data := input_data;
+        else
+            shift_data := (others => '0');
         end if;
 
-        self.shift_register <= self.shift_register(self.shift_register'left -1 downto 0) & x"0000";
+        self.shift_register <= self.shift_register(self.shift_register'left -1 downto 0) & shift_data;
         if self.transmit_counter > 0 then
             self.transmit_counter <= self.transmit_counter - 1;
+        end if;
+
+        if self.transfer_counter > 0 then
+            self.transfer_counter <= self.transfer_counter - 1;
         end if;
 
         if self.transmit_counter > 0 then
@@ -69,8 +74,10 @@ package body hyperram_driver_pkg is
         self.shift_register    <= data_in;
         self.bus_is_out_when_1 <= '1';
         self.transmit_counter  <= 2;
+        self.transfer_counter <= 10;
         
     end request_hyperram_transmit;
+------------------------------------------------------------------------
 ------------------------------------------------------------------------
 end package body hyperram_driver_pkg;
 ------------------------------------------------------------------------
@@ -98,10 +105,14 @@ architecture vunit_simulation of hyperram_tb is
     -----------------------------------
     -- simulation specific signals ----
     signal hyperram_driver : hyperram_driver_record := init_hyperram;
-    signal input_register : std16_array := (others => (others => '0'));
+
+    signal input_register  : std16_array := (others => (others => '0'));
+    signal output_register : std16_array := (others => (others => '1'));
 
     constant test_data : std16_array := (x"acdc", x"0110", x"abcd");
     signal test_data_has_been_received : boolean := false;
+
+    constant transmit_test_data : std16_array := (x"0123", x"4567", x"89ab");
 
 begin
 
@@ -124,7 +135,7 @@ begin
         if rising_edge(simulator_clock) then
             simulation_counter <= simulation_counter + 1;
 
-            create_hyperram_driver(hyperram_driver, x"ffff");
+            create_hyperram_driver(hyperram_driver, output_register(output_register'left));
 
             case simulation_counter is
                 when 5 => request_hyperram_transmit(hyperram_driver, test_data);
@@ -140,8 +151,16 @@ begin
             if hyperram_driver.bus_is_out_when_1 = '1' then
                 input_register <= input_register(input_register'left-1 downto 0) & hyperram_driver.shift_register(hyperram_driver.shift_register'left);
             end if;
+
+            -- if hyperram_driver.bus_is_out_when_1 = '0' then
+            output_register <= output_register(output_register'left-1 downto 0) & x"0000";
+            -- end if;
+
             if input_register = test_data then
                 test_data_has_been_received <= true;
+                if not test_data_has_been_received then
+                    output_register <= transmit_test_data;
+                end if;
             end if;
 
         end if; --rising_edge
