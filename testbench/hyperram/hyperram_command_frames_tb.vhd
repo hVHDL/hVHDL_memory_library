@@ -93,9 +93,9 @@ package body hyperram_interface_registers_pkg is
         return_value(transaction_type_1_read_0_write'range)          := "0";
         return_value(select_memory_with_1_and_register_with_0'range) := "0";
         return_value(linear_burst_with_0_wrapped_with_1'range)       := "0";
-        return_value(row_and_upper_column_address'range)             := to_std_logic(0,13);
-        return_value(reserved'range)                                 := to_std_logic(0,13);
-        return_value(lower_column_address'range)                     := to_std_logic(0,3);
+        return_value(row_and_upper_column_address'range)             := to_std_logic(0,row_and_upper_column_address'length);
+        return_value(reserved'range)                                 := to_std_logic(0,reserved'length);
+        return_value(lower_column_address'range)                     := to_std_logic(0,lower_column_address'length);
 
         return return_value;
 
@@ -114,11 +114,11 @@ context vunit_lib.vunit_context;
 
     use work.hyperram_interface_registers_pkg.all;
 
-entity command_frames_tb is
+entity hyperram_command_frames_tb is
   generic (runner_cfg : string);
 end;
 
-architecture vunit_simulation of command_frames_tb is
+architecture vunit_simulation of hyperram_command_frames_tb is
 
     constant clock_period      : time    := 1 ns;
     constant simtime_in_clocks : integer := 50;
@@ -128,8 +128,12 @@ architecture vunit_simulation of command_frames_tb is
     -----------------------------------
     -- simulation specific signals ----
 
-    signal hyperram_shift_register : hyperram_shift_array := (others => (others => '0'));
-    signal hyperram_output : std_logic_vector(15 downto 0) := (others => '0');
+    signal hyperram_shift_register : hyperram_shift_array                         := (others => (others => '0'));
+    signal hyperram_output         : std_logic_vector(15 downto 0)                := (others => '0');
+    signal shift_register          : std_logic_vector(hyperram_shift_array'range) := (others => '0');
+
+    signal hyperram_capture_shift_register : hyperram_shift_array := (others => (others => '0'));
+    signal hyperram_header_was_caught      : boolean := false;
 
 begin
 
@@ -138,6 +142,7 @@ begin
     begin
         test_runner_setup(runner, runner_cfg);
         wait for simtime_in_clocks*clock_period;
+        check(hyperram_header_was_caught, "hyperram header was not caught");
         test_runner_cleanup(runner); -- Simulation ends here
         wait;
     end process simtime;	
@@ -146,19 +151,29 @@ begin
 ------------------------------------------------------------------------
 
     stimulus : process(simulator_clock)
-
     begin
         if rising_edge(simulator_clock) then
             simulation_counter <= simulation_counter + 1;
 
-            hyperram_output <= hyperram_shift_register(0);
+            hyperram_output         <= hyperram_shift_register(0);
             hyperram_shift_register <= hyperram_shift_register(1 to 2) & x"0000";
+            shift_register          <= shift_register(1 to 2) & '0';
 
             if simulation_counter = 5 then
                 hyperram_shift_register <= to_shift_array(write_data_to_hyperram(0, 32));
+                shift_register          <= (others => '0');
             end if;
 
         end if; -- rising_edge
     end process stimulus;	
 ------------------------------------------------------------------------
+    capture_hyperram_commands : process(simulator_clock)
+        
+    begin
+        if rising_edge(simulator_clock) then
+            hyperram_capture_shift_register <= hyperram_capture_shift_register(1 to 2) & hyperram_output;
+
+            hyperram_header_was_caught <= hyperram_header_was_caught or (hyperram_capture_shift_register = to_shift_array(write_data_to_hyperram(0, 32)));
+        end if; --rising_edge
+    end process capture_hyperram_commands;	
 end vunit_simulation;
