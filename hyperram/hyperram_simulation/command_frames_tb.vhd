@@ -1,3 +1,109 @@
+library ieee;
+    use ieee.std_logic_1164.all;
+    use ieee.numeric_std.all;
+
+package hyperram_interface_registers_pkg is
+
+    type hyperram_shift_array is array (integer range 0 to 2) of std_logic_vector(15 downto 0);
+
+    subtype hyperram_header is std_logic_vector(47 downto 0);
+
+    subtype transaction_type_1_read_0_write          is std_logic_vector(47 downto 47);
+    subtype select_memory_with_1_and_register_with_0 is std_logic_vector(46 downto 46);
+    subtype linear_burst_with_0_wrapped_with_1       is std_logic_vector(45 downto 45);
+    subtype row_and_upper_column_address             is std_logic_vector(44 downto 16);
+    subtype reserved                                 is std_logic_vector(15 downto 3);
+    subtype lower_column_address                     is std_logic_vector(2 downto 0);
+
+    function to_std_logic ( number : integer; size : integer)
+        return std_logic_vector ;
+
+    function read_data_from_hyperram_memory ( start_address : integer)
+        return std_logic_vector;
+
+    function write_data_to_hyperram (
+        start_address       : integer;
+        number_of_registers : integer)
+        return std_logic_vector;
+
+    function to_shift_array ( hyperram_header : std_logic_vector(47 downto 0))
+        return hyperram_shift_array;
+
+end package hyperram_interface_registers_pkg;
+
+package body hyperram_interface_registers_pkg is
+
+    function to_std_logic
+    (
+        number : integer;
+        size : integer
+    )
+    return std_logic_vector 
+    is
+    begin
+        return std_logic_vector(to_unsigned(number, size));
+        
+    end to_std_logic;
+------------------------------------------------------------------------
+    function to_shift_array
+    (
+        hyperram_header : std_logic_vector(47 downto 0)
+    )
+    return hyperram_shift_array
+    is
+        variable retval : hyperram_shift_array := (others => (others => '0'));
+    begin
+        retval := (0 => hyperram_header(47 downto 32),
+                   1 => hyperram_header(31 downto 16),
+                   2 => hyperram_header(15 downto 0));
+
+        return retval;
+        
+    end to_shift_array;
+------------------------------------------------------------------------
+    function read_data_from_hyperram_memory
+    (
+        start_address : integer
+    )
+    return std_logic_vector
+    is
+        variable return_value : std_logic_vector(47 downto 0);
+    begin
+        return_value(transaction_type_1_read_0_write'range)          := "1";
+        return_value(select_memory_with_1_and_register_with_0'range) := "0";
+        return_value(linear_burst_with_0_wrapped_with_1'range)       := "0";
+        return_value(row_and_upper_column_address'range)             := to_std_logic(0,13);
+        return_value(reserved'range)                                 := to_std_logic(0,13);
+        return_value(lower_column_address'range)                     := to_std_logic(0,3);
+
+        return return_value;
+
+    end read_data_from_hyperram_memory;
+
+------------------------------------------------------------------------
+    function write_data_to_hyperram
+    (
+        start_address       : integer;
+        number_of_registers : integer
+    )
+    return std_logic_vector
+    is
+        variable return_value : std_logic_vector(47 downto 0);
+    begin
+        return_value(transaction_type_1_read_0_write'range)          := "0";
+        return_value(select_memory_with_1_and_register_with_0'range) := "0";
+        return_value(linear_burst_with_0_wrapped_with_1'range)       := "0";
+        return_value(row_and_upper_column_address'range)             := to_std_logic(0,13);
+        return_value(reserved'range)                                 := to_std_logic(0,13);
+        return_value(lower_column_address'range)                     := to_std_logic(0,3);
+
+        return return_value;
+
+    end write_data_to_hyperram;
+------------------------------------------------------------------------
+
+end package body hyperram_interface_registers_pkg;
+------------------------------------------------------------------------
 LIBRARY ieee  ; 
     USE ieee.NUMERIC_STD.all  ; 
     USE ieee.std_logic_1164.all  ; 
@@ -5,6 +111,8 @@ LIBRARY ieee  ;
 
 library vunit_lib;
 context vunit_lib.vunit_context;
+
+    use work.hyperram_interface_registers_pkg.all;
 
 entity command_frames_tb is
   generic (runner_cfg : string);
@@ -20,9 +128,7 @@ architecture vunit_simulation of command_frames_tb is
     -----------------------------------
     -- simulation specific signals ----
 
-    type hyperram_data_array is array (integer range 0 to 2) of std_logic_vector(15 downto 0);
-    signal hyperram_shift_register : hyperram_data_array := (others =>(others => '0'));
-
+    signal hyperram_shift_register : hyperram_shift_array := (others => (others => '0'));
     signal hyperram_output : std_logic_vector(15 downto 0) := (others => '0');
 
 begin
@@ -46,16 +152,11 @@ begin
             simulation_counter <= simulation_counter + 1;
 
             hyperram_output <= hyperram_shift_register(0);
-            hyperram_shift_register <= hyperram_shift_register(0 to 1) & x"0000";
+            hyperram_shift_register <= hyperram_shift_register(1 to 2) & x"0000";
 
             if simulation_counter = 5 then
-                hyperram_shift_register <= (
-                                               (15 => '1', 14 => '1', 13 => '0', 12 downto 0 => '1'),
-                                               (others => '0'),
-                                               (0=> '1', others => '0')
-                                           );
+                hyperram_shift_register <= to_shift_array(write_data_to_hyperram(0, 32));
             end if;
-
 
         end if; -- rising_edge
     end process stimulus;	
