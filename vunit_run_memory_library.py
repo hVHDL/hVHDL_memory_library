@@ -21,7 +21,9 @@ fpga_internal_ram.add_source_files(ROOT / "testbench/dual_port_ram/tb_dual_port_
 
 lib.add_source_files(ROOT / "sorting_algorithms/sorting_simulation" / "*.vhd")
 
-lib.add_source_files(ROOT / "fpga_memory_interface_tests" / "*.vhd")
+lib.add_source_files(ROOT / "fpga_memory_interface_tests/dual_port_ram_interface_tb.vhd")
+lib.add_source_files(ROOT / "fpga_memory_interface_tests/ram_read_tb.vhd")
+lib.add_source_files(ROOT / "fpga_memory_interface_tests/ram_write_tb.vhd")
 
 lib.add_source_files(ROOT / "testbench/hyperram/hyperram_command_frames_tb.vhd")
 VU.main()

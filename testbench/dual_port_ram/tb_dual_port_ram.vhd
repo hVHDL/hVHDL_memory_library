@@ -22,20 +22,18 @@ architecture vunit_simulation of dual_port_ram_tb is
     -----------------------------------
     -- simulation specific signals ----
 
-    signal ram_read_a_in  : ram_read_in_record;
-    signal ram_read_a_out : ram_read_out_record;
-    signal ram_write_a_in : ram_write_in_record;
+    signal ram_a_in  : ram_in_record;
+    signal ram_a_out : ram_out_record;
     --------------------
-    signal ram_read_b_in  : ram_read_in_record;
-    signal ram_read_b_out : ram_read_out_record;
-    signal ram_write_b_in : ram_write_in_record;
+    signal ram_b_in  : ram_in_record;
+    signal ram_b_out : ram_out_record;
 
     signal read_counter : natural := ram_array'length;
     signal ready_counter : natural := 0;
 
     signal ram_was_read : boolean := false;
 
-    signal test_output : std_logic_vector(ram_read_a_out.data'range) := (others => '0');
+    signal test_output : std_logic_vector(ram_a_out.data'range) := (others => '0');
 
     signal output_is_correct : boolean := false;
     signal last_ram_index_was_read : boolean := false;
@@ -61,34 +59,34 @@ begin
     begin
         if rising_edge(simulator_clock) then
             simulation_counter <= simulation_counter + 1;
-            init_ram(ram_read_a_in, ram_write_a_in);
-            init_ram(ram_read_b_in, ram_write_b_in);
+            init_ram(ram_a_in);
+            init_ram(ram_b_in);
 
             if simulation_counter < ram_array'length/2 then
-                write_data_to_ram(ram_write_a_in, simulation_counter*2, std_logic_vector(to_unsigned(simulation_counter*2, ram_write_a_in.data'length)));
-                write_data_to_ram(ram_write_b_in, simulation_counter*2+1, std_logic_vector(to_unsigned(simulation_counter*2+1, ram_write_a_in.data'length)));
+                write_data_to_ram(ram_a_in, simulation_counter*2, std_logic_vector(to_unsigned(simulation_counter*2, ram_a_in.data'length)));
+                write_data_to_ram(ram_b_in, simulation_counter*2+1, std_logic_vector(to_unsigned(simulation_counter*2+1, ram_a_in.data'length)));
             end if;
 
-            if simulation_counter = 2 then
+            if simulation_counter = ram_array'length/2 then
                 read_counter <= 0;
             end if;
 
             if read_counter < ram_array'length/2 then
                 read_counter <= read_counter + 1;
-                request_data_from_ram(ram_read_a_in, read_counter*2);
-                request_data_from_ram(ram_read_b_in, read_counter*2+1);
+                request_data_from_ram(ram_a_in, read_counter*2);
+                request_data_from_ram(ram_b_in, read_counter*2+1);
             end if;
 
-            if ram_read_is_ready(ram_read_a_out) then
+            if ram_read_is_ready(ram_a_out) then
                 ready_counter           <= ready_counter + 1;
-                test_output             <= get_ram_data(ram_read_a_out);
-                output_is_correct       <= (get_ram_data(ram_read_a_out) = std_logic_vector(to_unsigned(ready_counter*2, ram_read_a_out.data'length)));
-                last_ram_index_was_read <= to_integer(unsigned(get_ram_data(ram_read_b_out))) = ram_array'high;
+                test_output             <= get_ram_data(ram_a_out);
+                output_is_correct       <= (get_ram_data(ram_a_out) = std_logic_vector(to_unsigned(ready_counter*2, ram_a_out.data'length)));
+                last_ram_index_was_read <= to_integer(unsigned(get_ram_data(ram_b_out))) = ram_array'high;
 
-                check(get_ram_data(ram_read_a_out) = std_logic_vector(to_unsigned(ready_counter*2   , ram_read_a_out.data'length)));
-                check(get_ram_data(ram_read_b_out) = std_logic_vector(to_unsigned(ready_counter*2+1 , ram_read_b_out.data'length)));
+                check(get_ram_data(ram_a_out) = std_logic_vector(to_unsigned(ready_counter*2   , ram_a_out.data'length)));
+                check(get_ram_data(ram_b_out) = std_logic_vector(to_unsigned(ready_counter*2+1 , ram_b_out.data'length)));
             end if;
-            ram_was_read <= ram_was_read or ram_read_is_ready(ram_read_a_out);
+            ram_was_read <= ram_was_read or ram_read_is_ready(ram_a_out);
 
         end if; -- rising_edge
     end process stimulus;	
@@ -96,12 +94,11 @@ begin
     u_dpram : entity work.dual_port_ram
     port map(
     simulator_clock ,
-    ram_read_a_in   ,
-    ram_read_a_out  ,
-    ram_write_a_in  ,
+    ram_a_in   ,
+    ram_a_out  ,
     --------------
-    ram_read_b_in  ,
-    ram_read_b_out ,
-    ram_write_b_in);
+    ram_b_in  ,
+    ram_b_out);
+    
 ------------------------------------------------------------------------
 end vunit_simulation;
