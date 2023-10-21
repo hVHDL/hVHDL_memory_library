@@ -31,11 +31,10 @@ package fpga_dual_port_ram_pkg is
     type ram_write_port_record is record
         write_address          : address_integer;
         write_requested_with_1 : std_logic_vector(1 downto 0);
-        write_is_ready         : boolean;
         write_buffer           : integer;
     end record;
 
-    constant init_ram_write_port : ram_write_port_record := (0, "00", false, 0);
+    constant init_ram_write_port : ram_write_port_record := (0, "00", 0);
 
     type ram_record is record
         ram_read_port  : ram_read_port_record;

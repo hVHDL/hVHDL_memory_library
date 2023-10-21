@@ -31,7 +31,7 @@ end function;
 
 end package body ram_pkg;
 
-
+------------------------------------------------------------------------
 library ieee;
 library work;
     use ieee.std_logic_1164.all;
@@ -43,175 +43,101 @@ library work;
 
 entity efx_true_dual_port_no_change_1_clk_ram is
 generic (
-    RAM_WIDTH   : integer := ramtype'length;  -- Set RAM data width
-    RAM_DEPTH   : integer := ram_array'length; -- Set RAM depth
-    OUTREG      : boolean := true; -- Set outreg true/false
-    INIT_FILE   : string  := "";  -- Set memory initialization file E.g. input file name "ram_init.mem",  Memory will be initialled to all zero by default.
+    OUTREG          : boolean := true;             -- Set outreg true/false
     INIT_RAM_VALUES : ram_array
     );
 
 port (
-        addra : in std_logic_vector((logb2(RAM_DEPTH)-1) downto 0); -- Port A Address bus, calculated from RAM_DEPTH
-        addrb : in std_logic_vector((logb2(RAM_DEPTH)-1) downto 0); -- Port B Address bus, calculated from RAM_DEPTH
-        dina  : in ramtype;          -- Port A RAM input data
-        dinb  : in ramtype;          -- Port B RAM input data
-        clka  : in std_logic;                                       -- Clock
-        wea   : in std_logic;                                       -- Port A Write enable
-        web   : in std_logic;                                       -- Port B Write enable
-        ena   : in std_logic;                                       -- Port A RAM Enable
-        enb   : in std_logic;                                       -- Port B RAM Enable
-        rsta  : in std_logic;                                       -- Port A Output reset
-        rstb  : in std_logic;                                       -- Port B Output reset
-        douta : out ramtype;         -- Port A RAM output data
-        doutb : out ramtype          -- Port B RAM output data
+        addra : in std_logic_vector((logb2(ram_array'length)-1) downto 0); -- Port A Address bus, calculated from RAM_DEPTH
+        addrb : in std_logic_vector((logb2(ram_array'length)-1) downto 0); -- Port B Address bus, calculated from RAM_DEPTH
+        dina  : in ramtype;                                                -- Port A RAM input data
+        dinb  : in ramtype;                                                -- Port B RAM input data
+        clka  : in std_logic;                                              -- Clock
+        wea   : in std_logic;                                              -- Port A Write enable
+        web   : in std_logic;                                              -- Port B Write enable
+        ena   : in std_logic;                                              -- Port A RAM Enable
+        enb   : in std_logic;                                              -- Port B RAM Enable
+        rsta  : in std_logic;                                              -- Port A Output reset
+        rstb  : in std_logic;                                              -- Port B Output reset
+        douta : out ramtype;                                               -- Port A RAM output data
+        doutb : out ramtype                                                -- Port B RAM output data
     );
 
 end efx_true_dual_port_no_change_1_clk_ram;
 
 architecture RTL of efx_true_dual_port_no_change_1_clk_ram is
 
-constant C_RAM_WIDTH : integer := RAM_WIDTH;
-constant C_RAM_DEPTH : integer := RAM_DEPTH;
-constant C_OUTREG : boolean := OUTREG;
-constant C_INIT_FILE : string := INIT_FILE;
+constant C_OUTREG    : boolean := OUTREG;
 
+    signal douta_reg : ramtype := (others => '0');
+    signal doutb_reg : ramtype := (others => '0');
 
-signal douta_reg : ramtype := (others => '0');
-signal doutb_reg : ramtype := (others => '0');
+    signal ram_data_a : ramtype ;
+    signal ram_data_b : ramtype ;
 
-subtype ram_type is ram_array;
-
-signal ram_data_a : ramtype ;
-signal ram_data_b : ramtype ;
-
-
-function init_ram_frm_file (ramfilename : in string) return ram_type is
-file ramfile                          :    text is in ramfilename;
-variable ramfileline                  :    line;
-variable ram_name                     :    ram_array;
-variable temp_bitvec                  :    bit_vector(C_RAM_WIDTH-1 downto 0);
-begin
-    for i in ram_type'reverse_range loop
-        readline (ramfile, ramfileline);
-        read (ramfileline, temp_bitvec);
-        ram_name(i) := to_stdlogicvector(temp_bitvec);
-    end loop;
-    return ram_name;
-end function;
-
-function init_from_sel(ramfile : string) return ram_array is
-begin
-    if ramfile = "" then
-        return INIT_RAM_VALUES;
-    else 
-        return init_ram_frm_file(ramfile) ;
-    end if;
-end;
-
-shared variable ram_name : ram_type := init_from_sel(C_INIT_FILE);
+    shared variable ram_name : ram_array := INIT_RAM_VALUES;
 
 begin
 
-process(clka)
-begin
-    if(rising_edge(clka)) then
-        --if(ena = '1') then
-            if(wea = '1') then
-                ram_name(to_integer(unsigned(addra))) := dina;
-            else
-                ram_data_a <= ram_name(to_integer(unsigned(addra)));
-            end if;
-        --end if;
-    end if;
-end process;
+------------------------------------------------------------------------
+    process(clka)
+    begin
+        if(rising_edge(clka)) then
+            --if(ena = '1') then
+                if(wea = '1') then
+                    ram_name(to_integer(unsigned(addra))) := dina;
+                else
+                    ram_data_a <= ram_name(to_integer(unsigned(addra)));
+                end if;
+            --end if;
+        end if;
+    end process;
 
-process(clka)
-begin
-    if(rising_edge(clka)) then
-        --if(ena = '1') then
-            if(web = '1') then
-                ram_name(to_integer(unsigned(addrb))) := dinb;
-            else
-                ram_data_b <= ram_name(to_integer(unsigned(addrb)));
-            end if;
-        --end if;
-    end if;
-end process;
+------------------------------------------------------------------------
+    process(clka)
+    begin
+        if(rising_edge(clka)) then
+            --if(ena = '1') then
+                if(web = '1') then
+                    ram_name(to_integer(unsigned(addrb))) := dinb;
+                else
+                    ram_data_b <= ram_name(to_integer(unsigned(addrb)));
+                end if;
+            --end if;
+        end if;
+    end process;
 
-no_outreg : if not C_OUTREG  generate
-    douta <= ram_data_a;
-    doutb <= ram_data_b;
-end generate;
-
+------------------------------------------------------------------------
+    no_outreg : if not C_OUTREG  generate
+        douta <= ram_data_a;
+        doutb <= ram_data_b;
+    end generate;
             
-yes_outreg : if C_OUTREG  generate
-process(clka)
-begin
-    if(rising_edge(clka)) then
-        if(rsta = '1') then
-            douta_reg <= (others => '0');
-        else
-            douta_reg <= ram_data_a;
-        end if;
-    end if;
-end process;
-douta <= douta_reg;
+------------------------------------------------------------------------
+    yes_outreg : if C_OUTREG  generate
+        process(clka)
+        begin
+            if(rising_edge(clka)) then
+                if(rsta = '1') then
+                    douta_reg <= (others => '0');
+                else
+                    douta_reg <= ram_data_a;
+                end if;
+            end if;
+        end process;
+        douta <= douta_reg;
+        ----
+        process(clka)
+        begin
+            if(rising_edge(clka)) then
+                if(rstb = '1') then
+                    doutb_reg <= (others => '0');
+                else
+                    doutb_reg <= ram_data_b;
+                end if;
+            end if;
+        end process;
+        doutb <= doutb_reg;
+    end generate;
 
-process(clka)
-begin
-    if(rising_edge(clka)) then
-        if(rstb = '1') then
-            doutb_reg <= (others => '0');
-        else
-            doutb_reg <= ram_data_b;
-        end if;
-    end if;
-end process;
-doutb <= doutb_reg;
-
-end generate;
 end RTL;
-
--- Instantiation Template
---component efx_true_dual_port_no_change_1_clk_ram
---  generic (
---    RAM_WIDTH : integer;
---    RAM_DEPTH : integer;
---    OUTREG    : boolean;
---    INIT_FILE : string);
---  port (
---    addra  : in  std_logic_vector((logb2(RAM_DEPTH)-1) downto 0);
---    addrb  : in  std_logic_vector((logb2(RAM_DEPTH)-1) downto 0);
---    dina   : in  ramtype;
---    dinb   : in  ramtype;
---    clka   : in  std_logic;
---    wea    : in  std_logic;
---    web    : in  std_logic;
---    ena    : in  std_logic;
---    enb    : in  std_logic;
---    rsta   : in  std_logic;
---    rstb   : in  std_logic;
---    douta  : out ramtype;
---    doutb  : out ramtype);
---end component;
---
---efx_true_dual_port_no_change_1_clk_ram_1: efx_true_dual_port_no_change_1_clk_ram
---  generic map (
---    RAM_WIDTH => RAM_WIDTH,
---    RAM_DEPTH => RAM_DEPTH,
---    OUTREG    => OUTREG,
---    INIT_FILE => INIT_FILE)
---  port map (
---    addra  => addra,
---    addrb  => addrb,
---    dina   => dina,
---    dinb   => dinb,
---    clka   => clka,
---    wea    => wea,
---    web    => web,
---    ena    => ena,
---    enb    => enb,
---    rsta   => rsta,
---    rstb   => rstb,
---    douta  => douta,
---    doutb  => doutb);
