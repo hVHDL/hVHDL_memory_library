@@ -29,13 +29,8 @@ package multi_port_ram_pkg is
     end record;
 
     procedure init_ram (
-        signal self_read_in : out ram_read_in_record);
-
-    procedure init_ram (
-        signal self_write_in : out ram_write_in_record);
-
-    procedure init_ram (
-        signal self_read_in : out ram_read_in_record;
+        signal self_read_in1 : out ram_read_in_record;
+        signal self_read_in2 : out ram_read_in_record;
         signal self_write_in : out ram_write_in_record);
 
     procedure request_data_from_ram (
@@ -80,27 +75,13 @@ package body multi_port_ram_pkg is
 ------------------------------------------------------------------------
     procedure init_ram
     (
-        signal self_read_in : out ram_read_in_record
-    ) is
-    begin
-        self_read_in.read_is_requested <= '0';
-    end init_ram;
-
-    procedure init_ram
-    (
+        signal self_read_in1 : out ram_read_in_record;
+        signal self_read_in2 : out ram_read_in_record;
         signal self_write_in : out ram_write_in_record
     ) is
     begin
-        self_write_in.write_requested  <= '0';
-    end init_ram;
-
-    procedure init_ram
-    (
-        signal self_read_in : out ram_read_in_record;
-        signal self_write_in : out ram_write_in_record
-    ) is
-    begin
-        self_read_in.read_is_requested <= '0';
+        self_read_in1.read_is_requested <= '0';
+        self_read_in2.read_is_requested <= '0';
         self_write_in.write_requested  <= '0';
     end init_ram;
 ------------------------------

@@ -4,7 +4,7 @@ library ieee;
 
     use work.multi_port_ram_pkg.all;
 
-entity ram_read_2x_write_1x is
+entity ram_read_x2_write_x1 is
     generic(initial_values : ram_array := (others => (others => '1')));
     port (
         clock          : in std_logic;
@@ -16,4 +16,4 @@ entity ram_read_2x_write_1x is
         --------------------
         ram_write_in   : in ram_write_in_record
     );
-end entity ram_read_2x_write_1x;
+end entity ram_read_x2_write_x1;

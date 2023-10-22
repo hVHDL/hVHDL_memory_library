@@ -1,4 +1,4 @@
-architecture sim of ram_read_2x_write_1x is
+architecture sim of ram_read_x2_write_x1 is
 
 ------------------------------------------------------------------------
     type dp_ram is protected

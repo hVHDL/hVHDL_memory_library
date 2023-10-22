@@ -19,6 +19,11 @@ fpga_internal_ram.add_source_files(ROOT / "fpga_internal_ram/dual_port_ram.vhd")
 fpga_internal_ram.add_source_files(ROOT / "fpga_internal_ram/arch_sim_dual_port_ram.vhd")
 fpga_internal_ram.add_source_files(ROOT / "testbench/dual_port_ram/tb_dual_port_ram.vhd")
 
+fpga_internal_ram.add_source_files(ROOT / "multi_port_ram/multi_port_ram_pkg.vhd")
+fpga_internal_ram.add_source_files(ROOT / "multi_port_ram/ram_read_x2_write_x1.vhd")
+fpga_internal_ram.add_source_files(ROOT / "multi_port_ram/arch_sim_read_x2_write_x1.vhd")
+fpga_internal_ram.add_source_files(ROOT / "testbench/multi_port_ram/read_x2_write_x1_tb.vhd")
+
 lib.add_source_files(ROOT / "sorting_algorithms/sorting_simulation" / "*.vhd")
 
 lib.add_source_files(ROOT / "fpga_memory_interface_tests/dual_port_ram_interface_tb.vhd")
