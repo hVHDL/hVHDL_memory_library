@@ -2,6 +2,23 @@
 architecture sim of dual_port_ram is
 
 ------------------------------------------------------------------------
+    impure function init_ram
+    (
+        ram_init_values : ram_array
+    )
+    return ram_array
+    is
+        variable retval : ram_array := (others => (others => '0'));
+    begin
+
+        for i in ram_init_values'range loop
+            retval(i) := ram_init_values(i);
+        end loop;
+
+        return retval;
+        
+    end init_ram;
+
     type dp_ram is protected
 
     ------------------------------
@@ -12,31 +29,24 @@ architecture sim of dual_port_ram is
         impure function read_data(address : natural)
             return std_logic_vector;
     ------------------------------
+        impure function get_ram_array return ram_array;
+    ------------------------------
 
     end protected dp_ram;
 
 ------------------------------------------------------------------------
+------------------------------------------------------------------------
     type dp_ram is protected body
     ------------------------------
-        impure function init_ram
-        (
-            ram_init_values : ram_array
-        )
-        return ram_array
-        is
-            variable retval : ram_array := (others => (others => '0'));
-        begin
-
-            for i in ram_init_values'range loop
-                retval(i) := ram_init_values(i);
-            end loop;
-
-            return retval;
-            
-        end init_ram;
 
         variable ram_contents : ram_array := init_ram(initial_values);
 
+    ------------------------------
+        impure function get_ram_array return ram_array
+        is
+        begin
+            return ram_contents;
+        end get_ram_array;
     ------------------------------
         impure function read_data
         (
@@ -70,6 +80,7 @@ architecture sim of dual_port_ram is
 
     signal read_b_pipeline : std_logic_vector(1 downto 0) := (others => '0');
     signal output_b_buffer : std_logic_vector(ram_b_out.data'range);
+    signal debug_ram_contents : ram_array := init_ram(initial_values);
 
 begin
     ram_a_out.data_is_ready <= read_a_pipeline(read_a_pipeline'left);
@@ -86,6 +97,7 @@ begin
                     dual_port_ram_array.write_ram(ram_a_in.address, ram_a_in.data);
                 end if;
             end if;
+            debug_ram_contents <= dual_port_ram_array.get_ram_array;
         end if;
     end process;
 
