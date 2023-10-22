@@ -45,22 +45,6 @@ package ram_port_pkg is
         address : in natural;
         data    : in std_logic_vector);
 
-        -- clka  : in std_logic;                                       -- Clock
-        -- ena   : in std_logic;                                       -- Port A RAM Enable
-        -- wea   : in std_logic;                                       -- Port A Write enable
-        -- dina  : in std_logic_vector(RAM_WIDTH-1 downto 0);          -- Port A RAM input data
-        -- rsta  : in std_logic;                                       -- Port A Output reset
-        -- regcea: in std_logic;                                       -- Port A Output register enable
-        -- douta : out std_logic_vector(RAM_WIDTH-1 downto 0);         -- Port A RAM output data
-
-        -- addrb : in std_logic_vector((logb2(RAM_DEPTH)-1) downto 0);     -- Port B Address
-        -- dinb  : in std_logic_vector(RAM_WIDTH-1 downto 0);		-- Port B RAM input data
-        -- web   : in std_logic;                       			-- Port B Write enable
-        -- enb   : in std_logic;                       			-- Port B RAM Enable
-        -- rstb  : in std_logic;                       			-- Port B Output reset 
-        -- regceb: in std_logic;                       			-- Port B Output register enable
-        -- doutb : out std_logic_vector(RAM_WIDTH-1 downto 0)   		-- Port B RAM output data
-
 end package ram_port_pkg;
 
 package body ram_port_pkg is
@@ -72,7 +56,7 @@ package body ram_port_pkg is
     ) is
     begin
         self_in.read_is_requested <= '0';
-        self_in.write_requested  <= '0';
+        self_in.write_requested   <= '0';
     end init_ram;
 
 ------------------------------
