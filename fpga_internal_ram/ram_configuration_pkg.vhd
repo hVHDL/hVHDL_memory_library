@@ -11,5 +11,7 @@ package ram_configuration_pkg is
     subtype address_integer is natural range 0 to ram_depth-1;
     subtype t_ram_data      is std_logic_vector(ram_bit_width-1 downto 0);
 
+    type ram_array is array (integer range 0 to ram_depth-1) of t_ram_data;
+
 end package ram_configuration_pkg;
 ------------------------------------------------------------------------

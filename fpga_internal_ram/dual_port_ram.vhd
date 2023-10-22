@@ -9,7 +9,7 @@ package ram_port_pkg is
     -- move these to separate package
     subtype ramtype     is std_logic_vector(ram_bit_width-1 downto 0);
     subtype ram_address is natural range 0 to ram_depth-1;
-    subtype ram_array   is work.ram_read_pkg.ram_array;
+    subtype ram_array   is work.ram_configuration_pkg.ram_array;
 
     type ram_in_record is record
         address           : ram_address;

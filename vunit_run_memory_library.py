@@ -14,7 +14,6 @@ lib.add_source_files(ROOT / "fpga_ram/fpga_ram_simulation" / "*.vhd")
 
 fpga_internal_ram = VU.add_library("fpga_ram")
 fpga_internal_ram.add_source_files(ROOT / "fpga_internal_ram/ram_configuration_pkg.vhd")
-fpga_internal_ram.add_source_files(ROOT / "fpga_internal_ram/ram_read_base_pkg.vhd")
 fpga_internal_ram.add_source_files(ROOT / "fpga_internal_ram/dual_port_ram.vhd")
 fpga_internal_ram.add_source_files(ROOT / "fpga_internal_ram/arch_sim_dual_port_ram.vhd")
 fpga_internal_ram.add_source_files(ROOT / "testbench/dual_port_ram/tb_dual_port_ram.vhd")
