@@ -72,7 +72,7 @@ architecture sim of ram_read_x2_write_x1 is
 
 begin
     ram_read_a_out.data_is_ready <= read_a_pipeline(read_a_pipeline'left);
-    ram_read_b_out.data_is_ready <= read_b_pipeline(read_a_pipeline'left);
+    ram_read_b_out.data_is_ready <= read_b_pipeline(read_b_pipeline'left);
 
     create_ram_a_port : process(clock)
     begin

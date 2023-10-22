@@ -91,7 +91,7 @@ begin
         end if; -- rising_edge
     end process stimulus;	
 ------------------------------------------------------------------------
-    u_dpram : entity work.ram_read_x2_write_x1
+    u_ram_read_x2_write_x1 : entity work.ram_read_x2_write_x1
     port map(
     simulator_clock ,
     ram_read_a_in   ,
