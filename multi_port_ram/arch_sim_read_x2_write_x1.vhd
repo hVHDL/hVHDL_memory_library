@@ -1,8 +1,27 @@
 architecture sim of ram_read_x2_write_x1 is
 
+    impure function init_ram
+    (
+        ram_init_values : ram_array
+    )
+    return ram_array
+    is
+        variable retval : ram_array := (others => (others => '0'));
+    begin
+
+        for i in ram_init_values'range loop
+            retval(i) := ram_init_values(i);
+        end loop;
+
+        return retval;
+        
+    end init_ram;
+
 ------------------------------------------------------------------------
     type dp_ram is protected
 
+    ------------------------------
+        impure function get_ram_contents return ram_array;
     ------------------------------
         procedure write_ram(
             address : in natural;
@@ -17,25 +36,17 @@ architecture sim of ram_read_x2_write_x1 is
 ------------------------------------------------------------------------
     type dp_ram is protected body
     ------------------------------
-        impure function init_ram
-        (
-            ram_init_values : ram_array
-        )
-        return ram_array
-        is
-            variable retval : ram_array := (others => (others => '0'));
-        begin
-
-            for i in ram_init_values'range loop
-                retval(i) := ram_init_values(i);
-            end loop;
-
-            return retval;
-            
-        end init_ram;
 
         variable ram_contents : ram_array := init_ram(initial_values);
 
+    ------------------------------
+        impure function get_ram_contents return ram_array
+        is
+        begin
+
+            return ram_contents;
+            
+        end get_ram_contents;
     ------------------------------
         impure function read_data
         (
@@ -69,6 +80,7 @@ architecture sim of ram_read_x2_write_x1 is
 
     signal read_b_pipeline : std_logic_vector(1 downto 0) := (others => '0');
     signal output_b_buffer : std_logic_vector(ram_read_b_out.data'range);
+    signal debug_ram_contents : ram_array := init_ram(initial_values); 
 
 begin
     ram_read_a_out.data_is_ready <= read_a_pipeline(read_a_pipeline'left);
@@ -79,6 +91,7 @@ begin
         if(rising_edge(clock)) then
             read_a_pipeline <= read_a_pipeline(read_a_pipeline'left-1 downto 0) & ram_read_a_in.read_is_requested;
             ram_read_a_out.data <= output_a_buffer;
+            debug_ram_contents <= dual_port_ram_array.get_ram_contents;
             if (ram_read_a_in.read_is_requested = '1') or (ram_write_in.write_requested = '1') then
                 output_a_buffer <= dual_port_ram_array.read_data(ram_read_a_in.address);
                 if ram_write_in.write_requested = '1' then
