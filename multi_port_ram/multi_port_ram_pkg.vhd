@@ -50,24 +50,9 @@ package multi_port_ram_pkg is
     procedure write_data_to_ram (
         signal self_write_in : out ram_write_in_record;
         address : in natural;
+
         data    : in std_logic_vector);
-
-        -- clka  : in std_logic;                                       -- Clock
-        -- ena   : in std_logic;                                       -- Port A RAM Enable
-        -- wea   : in std_logic;                                       -- Port A Write enable
-        -- dina  : in std_logic_vector(RAM_WIDTH-1 downto 0);          -- Port A RAM input data
-        -- rsta  : in std_logic;                                       -- Port A Output reset
-        -- regcea: in std_logic;                                       -- Port A Output register enable
-        -- douta : out std_logic_vector(RAM_WIDTH-1 downto 0);         -- Port A RAM output data
-
-        -- addrb : in std_logic_vector((logb2(RAM_DEPTH)-1) downto 0);     -- Port B Address
-        -- dinb  : in std_logic_vector(RAM_WIDTH-1 downto 0);		-- Port B RAM input data
-        -- web   : in std_logic;                       			-- Port B Write enable
-        -- enb   : in std_logic;                       			-- Port B RAM Enable
-        -- rstb  : in std_logic;                       			-- Port B Output reset 
-        -- regceb: in std_logic;                       			-- Port B Output register enable
-        -- doutb : out std_logic_vector(RAM_WIDTH-1 downto 0)   		-- Port B RAM output data
-
+------------------------------------------------------------------------
 end package multi_port_ram_pkg;
 
 package body multi_port_ram_pkg is
