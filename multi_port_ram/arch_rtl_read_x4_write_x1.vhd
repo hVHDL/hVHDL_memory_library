@@ -20,8 +20,8 @@ architecture rtl of ram_read_x4_write_x1 is
 begin
     ram_read_a_out.data_is_ready <= read_a_pipeline(read_a_pipeline'left);
     ram_read_b_out.data_is_ready <= read_b_pipeline(read_b_pipeline'left);
-    ram_read_c_out.data_is_ready <= read_b_pipeline(read_c_pipeline'left);
-    ram_read_d_out.data_is_ready <= read_b_pipeline(read_d_pipeline'left);
+    ram_read_c_out.data_is_ready <= read_c_pipeline(read_c_pipeline'left);
+    ram_read_d_out.data_is_ready <= read_d_pipeline(read_d_pipeline'left);
 
     create_ram_a_port : process(clock)
     begin
