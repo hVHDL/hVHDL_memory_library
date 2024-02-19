@@ -28,6 +28,9 @@ package multi_port_ram_pkg is
         write_requested : std_logic;
     end record;
 
+    procedure init_ram_read (
+        signal self_read_in : out ram_read_in_record);
+
     procedure init_ram (
         signal self_read_in1 : out ram_read_in_record;
         signal self_read_in2 : out ram_read_in_record;
@@ -57,6 +60,13 @@ end package multi_port_ram_pkg;
 
 package body multi_port_ram_pkg is
 
+    procedure init_ram_read
+    (
+        signal self_read_in : out ram_read_in_record
+    ) is
+    begin
+        self_read_in.read_is_requested <= '0';
+    end init_ram_read;
 ------------------------------------------------------------------------
     procedure init_ram
     (
