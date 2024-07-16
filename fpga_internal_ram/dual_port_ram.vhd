@@ -18,10 +18,14 @@ package ram_port_pkg is
         write_requested   : std_logic;
     end record;
 
+
     type ram_out_record is record
         data          : std_logic_vector(ramtype'range);
         data_is_ready : std_logic;
     end record;
+
+    type ram_in_array is array (natural range <>) of ram_in_record;
+    type ram_out_array is array (natural range <>) of ram_out_record;
 
     procedure init_ram (
         signal self_in : out ram_in_record);

@@ -23,12 +23,15 @@ architecture vunit_simulation of read_x2_write_x1_tb is
     -----------------------------------
     -- simulation specific signals ----
 
-    signal ram_read_a_in  : ram_read_in_record;
-    signal ram_read_a_out : ram_read_out_record;
-    --------------------
-    signal ram_read_b_in  : ram_read_in_record;
-    signal ram_read_b_out : ram_read_out_record;
+    signal ram_read_in : ram_read_in_array(0 to 1);
+    signal ram_read_out : ram_read_out_array(0 to 1);
     signal ram_write_in : ram_write_in_record;
+
+    alias ram_read_a_in  is ram_read_in(0);
+    alias ram_read_a_out is ram_read_out(0);
+    --------------------
+    alias ram_read_b_in  is ram_read_in(1);
+    alias ram_read_b_out is ram_read_out(1);
 
     signal read_counter : natural := ram_array'length;
     signal ready_counter : natural := 0;
@@ -91,14 +94,12 @@ begin
         end if; -- rising_edge
     end process stimulus;	
 ------------------------------------------------------------------------
-    u_ram_read_x2_write_x1 : entity work.ram_read_x2_write_x1
+    u_ram_read_x2_write_x1 : entity work.multi_port_ram
+    generic map(number_of_read_ports => ram_read_in'length, initial_values => (others => (others => '0')))
     port map(
     simulator_clock ,
-    ram_read_a_in   ,
-    ram_read_a_out  ,
-    --------------
-    ram_read_b_in  ,
-    ram_read_b_out ,
+    ram_read_in   , 
+    ram_read_out  ,
     --------------
     ram_write_in);
 ------------------------------------------------------------------------

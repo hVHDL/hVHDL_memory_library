@@ -28,8 +28,14 @@ package multi_port_ram_pkg is
         write_requested : std_logic;
     end record;
 
+    type ram_read_in_array  is array (natural range <>) of ram_read_in_record;
+    type ram_read_out_array is array (natural range <>) of ram_read_out_record;
+
     procedure init_ram_read (
         signal self_read_in : out ram_read_in_record);
+
+    procedure init_ram_read (
+        signal self_read_in : out ram_read_in_array);
 
     procedure init_ram (
         signal self_read_in1 : out ram_read_in_record;
@@ -66,6 +72,16 @@ package body multi_port_ram_pkg is
     ) is
     begin
         self_read_in.read_is_requested <= '0';
+    end init_ram_read;
+
+    procedure init_ram_read
+    (
+        signal self_read_in : out ram_read_in_array
+    ) is
+    begin
+        for i in self_read_in'range loop
+            self_read_in(i).read_is_requested <= '0';
+        end loop;
     end init_ram_read;
 ------------------------------------------------------------------------
     procedure init_ram
