@@ -16,7 +16,7 @@ end;
 architecture vunit_simulation of read_x2_write_x1_tb is
 
     constant clock_period      : time    := 1 ns;
-    constant simtime_in_clocks : integer := 500;
+    constant simtime_in_clocks : integer := 1500;
     
     signal simulator_clock     : std_logic := '0';
     signal simulation_counter  : natural   := 0;
@@ -47,7 +47,7 @@ begin
     begin
         test_runner_setup(runner, runner_cfg);
         wait for simtime_in_clocks*clock_period;
-        check(ram_was_read);
+        check(ram_was_read, "entire ram was read");
         check(last_ram_index_was_read, "last index was not read");
         test_runner_cleanup(runner); -- Simulation ends here
         wait;
@@ -83,8 +83,8 @@ begin
                 output_is_correct       <= (get_ram_data(ram_read_a_out) = std_logic_vector(to_unsigned(ready_counter*2, ram_read_a_out.data'length)));
                 last_ram_index_was_read <= to_integer(unsigned(get_ram_data(ram_read_b_out))) = ram_array'high;
 
-                check(get_ram_data(ram_read_a_out) = std_logic_vector(to_unsigned(ready_counter*2   , ram_read_a_out.data'length)));
-                check(get_ram_data(ram_read_b_out) = std_logic_vector(to_unsigned(ready_counter*2+1 , ram_read_b_out.data'length)));
+                check(get_ram_data(ram_read_a_out) = std_logic_vector(to_unsigned(ready_counter*2   , ram_read_a_out.data'length)), "port 1 read failed");
+                check(get_ram_data(ram_read_b_out) = std_logic_vector(to_unsigned(ready_counter*2+1 , ram_read_b_out.data'length)), "port 2 read failed");
             end if;
             ram_was_read <= ram_was_read or ram_read_is_ready(ram_read_a_out);
 

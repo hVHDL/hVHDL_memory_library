@@ -15,7 +15,7 @@ end;
 architecture vunit_simulation of dual_port_ram_tb is
 
     constant clock_period      : time    := 1 ns;
-    constant simtime_in_clocks : integer := 500;
+    constant simtime_in_clocks : integer := 1500;
     
     signal simulator_clock     : std_logic := '0';
     signal simulation_counter  : natural   := 0;
