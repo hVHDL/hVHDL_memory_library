@@ -1,39 +1,33 @@
 architecture rtl of multi_port_ram is
 
-    use work.ram_port_pkg.all;
+    type read_pipeline_array is array (ram_read_in'range) of std_logic_vector(1 downto 0);
+    type output_buffer_array is array (ram_read_in'range) of std_logic_vector(ram_read_out(0).data'range);
+    signal read_pipeline : read_pipeline_array := (others => (others => '0'));
+    signal output_buffer : output_buffer_array := (others => (others => '0'));
 
-    signal ram_a_in : ram_in_array(0 to number_of_read_ports-1);
-    signal ram_b_in : ram_in_array(0 to number_of_read_ports-1);
-    signal ram_a_out : ram_out_array(0 to number_of_read_ports-1);
-    /* signal ram_b_out : ram_out_array(ram_read_out'range); */
+    shared variable ram_contents : ram_array := initial_values;
 
 begin
 
-    create_multi_port_ram_from_dp_ram:
-    for i in ram_read_in'range generate
-        ram_a_in(i) <= (address          => ram_read_in(i).address        ,
-                       read_is_requested => ram_read_in(i).read_is_requested ,
-                       data              => (others => '0')               ,
-                       write_requested   => '0');
+create_multi_port_ram :
+for i in ram_read_in'range generate
 
-        ram_b_in(i) <= (address          => ram_write_in.address ,
-                       read_is_requested => '0'                  ,
-                       data              => ram_write_in.data    ,
-                       write_requested   => ram_write_in.write_requested);
+    ram_read_out(i).data_is_ready <= read_pipeline(i)(read_pipeline(i)'left);
 
-        ram_read_out(i) <= (data         => ram_a_out(i).data ,
-                           data_is_ready => ram_a_out(i).data_is_ready);
+    create_ram_port : process(clock)
+    begin
+        if(rising_edge(clock)) then
+            read_pipeline(i) <= read_pipeline(i)(read_pipeline(i)'left-1 downto 0) & ram_read_in(i).read_is_requested;
+            ram_read_out(i).data <= output_buffer(i);
+            if (ram_read_in(i).read_is_requested = '1') or (ram_write_in.write_requested = '1') then
+                output_buffer(i) <= ram_contents(ram_read_in(i).address);
+                if ram_write_in.write_requested = '1' then
+                    ram_contents(ram_write_in.address) := ram_write_in.data;
+                end if;
+            end if;
+        end if;
+    end process;
 
-        u_dpram : entity work.dual_port_ram
-        generic map(initial_values)
-        port map(
-        clock ,
-        ram_a_in(i)   ,
-        ram_a_out(i)  ,
-        --------------
-        ram_b_in(i)  ,
-        open);
-
-    end generate;
+end generate;
 
 end rtl;
