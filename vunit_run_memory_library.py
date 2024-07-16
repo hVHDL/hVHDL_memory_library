@@ -23,6 +23,7 @@ fpga_ram.add_source_files(ROOT / "multi_port_ram/ram_read_x2_write_x1.vhd")
 fpga_ram.add_source_files(ROOT / "multi_port_ram/arch_sim_read_x2_write_x1.vhd")
 fpga_ram.add_source_files(ROOT / "testbench/multi_port_ram/read_x2_write_x1_tb.vhd")
 fpga_ram.add_source_files(ROOT / "multi_port_ram/multi_port_ram_entity.vhd")
+fpga_ram.add_source_files(ROOT / "multi_port_ram/arch_rtl_multi_port_ram.vhd")
 
 
 lib.add_source_files(ROOT / "sorting_algorithms/sorting_simulation" / "*.vhd")
