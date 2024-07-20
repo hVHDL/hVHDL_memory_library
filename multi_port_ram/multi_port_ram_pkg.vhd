@@ -38,6 +38,10 @@ package multi_port_ram_pkg is
         signal self_read_in : out ram_read_in_array);
 
     procedure init_ram (
+        signal self_read_in : out ram_read_in_array;
+        signal self_write_in : out ram_write_in_record);
+
+    procedure init_ram (
         signal self_read_in1 : out ram_read_in_record;
         signal self_read_in2 : out ram_read_in_record;
         signal self_write_in : out ram_write_in_record);
@@ -80,19 +84,18 @@ package body multi_port_ram_pkg is
     ) is
     begin
         for i in self_read_in'range loop
+            self_read_in(i).address <= 0;
             self_read_in(i).read_is_requested <= '0';
         end loop;
     end init_ram_read;
 ------------------------------------------------------------------------
     procedure init_ram
     (
-        signal self_read_in1 : out ram_read_in_record;
-        signal self_read_in2 : out ram_read_in_record;
+        signal self_read_in : out ram_read_in_array;
         signal self_write_in : out ram_write_in_record
     ) is
     begin
-        self_read_in1.read_is_requested <= '0';
-        self_read_in2.read_is_requested <= '0';
+        init_ram_read(self_read_in);
         self_write_in.write_requested  <= '0';
     end init_ram;
 ------------------------------
@@ -106,6 +109,18 @@ package body multi_port_ram_pkg is
         self_read_in.address <= address;
         self_read_in.read_is_requested <= '1';
     end request_data_from_ram;
+
+    procedure init_ram
+    (
+        signal self_read_in1 : out ram_read_in_record;
+        signal self_read_in2 : out ram_read_in_record;
+        signal self_write_in : out ram_write_in_record
+    ) is
+    begin
+        self_read_in1.read_is_requested <= '0';
+        self_read_in2.read_is_requested <= '0';
+        self_write_in.write_requested  <= '0';
+    end init_ram;
 ------------------------------
     function ram_read_is_ready
     (

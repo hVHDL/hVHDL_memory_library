@@ -64,7 +64,7 @@ begin
     begin
         if rising_edge(simulator_clock) then
             simulation_counter <= simulation_counter + 1;
-            init_ram(ram_read_a_in,ram_read_b_in, ram_write_in);
+            init_ram(ram_read_in, ram_write_in);
 
             if simulation_counter < ram_array'length then
                 write_data_to_ram(ram_write_in, simulation_counter, std_logic_vector(to_unsigned(simulation_counter, ram_write_in.data'length)));
