@@ -9,8 +9,8 @@ entity multi_port_ram is
             initial_values : ram_array := (others => (others => '1')));
     port (
         clock        : in std_logic;
-        ram_read_in  : in ram_read_in_array;
-        ram_read_out : out ram_read_out_array;
+        ram_read_in  : in ram_read_in_array(0 to number_of_read_ports-1);
+        ram_read_out : out ram_read_out_array(0 to number_of_read_ports-1);
         --------------------
         ram_write_in : in ram_write_in_record
     );
