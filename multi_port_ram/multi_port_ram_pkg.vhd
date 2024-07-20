@@ -41,6 +41,7 @@ package multi_port_ram_pkg is
         signal self_read_in : out ram_read_in_array;
         signal self_write_in : out ram_write_in_record);
 
+    -- TODO : remove as obsolete
     procedure init_ram (
         signal self_read_in1 : out ram_read_in_record;
         signal self_read_in2 : out ram_read_in_record;
