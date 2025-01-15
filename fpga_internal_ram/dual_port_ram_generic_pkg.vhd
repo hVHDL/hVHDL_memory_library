@@ -3,18 +3,17 @@ library ieee;
     use ieee.numeric_std.all;
 
 package ram_port_generic_pkg is
-    generic (g_ram_bit_width : positive := 16
-            ;g_ram_depth_pow2 : positive := 10);
+    generic (g_ram_bit_width : natural := 16
+            ;g_ram_depth_pow2 : natural := 10);
 
-    constant ram_bit_width : positive := g_ram_bit_width;
-    constant ram_depth : positive := 2**g_ram_depth_pow2;
+    alias ram_bit_width is g_ram_bit_width;
+    constant ram_depth : natural := 2**g_ram_depth_pow2;
 
     subtype ramtype     is std_logic_vector(ram_bit_width-1 downto 0);
     subtype ram_address is natural range 0 to ram_depth-1;
     subtype address_integer is natural range 0 to ram_depth-1;
-    subtype t_ram_data      is std_logic_vector(ram_bit_width-1 downto 0);
 
-    type ram_array is array (integer range 0 to ram_depth-1) of t_ram_data;
+    type ram_array is array (natural range 0 to ram_depth-1) of ramtype;
 
     type ram_in_record is record
         address           : ram_address;

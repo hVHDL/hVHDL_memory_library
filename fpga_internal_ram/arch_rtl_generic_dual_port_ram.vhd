@@ -3,6 +3,8 @@ architecture rtl of generic_dual_port_ram is
 
 ------------------------------------------------------------------------
     ------------------------------
+    
+    use ram_port_pkg.all;
 
     signal read_a_pipeline : std_logic_vector(1 downto 0) := (others => '0');
     signal output_a_buffer : std_logic_vector(ram_a_out.data'range);
@@ -10,7 +12,8 @@ architecture rtl of generic_dual_port_ram is
     signal read_b_pipeline : std_logic_vector(1 downto 0) := (others => '0');
     signal output_b_buffer : std_logic_vector(ram_b_out.data'range);
 
-    shared variable ram_contents : ram_array := initial_values;
+    constant ram_init : ram_array := initial_values;
+    shared variable ram_contents : ram_array := ram_init;
 
 begin
     ram_a_out.data_is_ready <= read_a_pipeline(read_a_pipeline'left);
