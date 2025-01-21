@@ -33,6 +33,8 @@ package ram_port_generic_pkg is
     procedure init_ram (
         signal self_in : out ram_in_record);
 
+    function init_ram (self_in : ram_in_record) return ram_in_record;
+
     procedure request_data_from_ram (
         signal self_in : out ram_in_record;
         address : in natural);
@@ -64,6 +66,15 @@ package body ram_port_generic_pkg is
     begin
         self_in.read_is_requested <= '0';
         self_in.write_requested   <= '0';
+    end init_ram;
+
+    function init_ram (self_in : ram_in_record) return ram_in_record
+    is
+        variable retval : ram_in_record := self_in;
+    begin
+        retval.read_is_requested := '0';
+        retval.write_requested := '0';
+        return retval;
     end init_ram;
 
 ------------------------------
