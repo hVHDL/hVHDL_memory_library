@@ -41,6 +41,13 @@ architecture vunit_simulation of sample_buffer_tb is
     signal output_is_correct : boolean := false;
     signal last_ram_index_was_read : boolean := false;
 
+    signal int_sin : integer := 0;
+    signal triggered : std_logic_vector(1 downto 0) := "00";
+    signal trigger : boolean := false;
+    signal ram_write_enabled : boolean := false;
+    signal write_counter : natural range 0 to ram_depth-1;
+    -- signal read_counter : natural range 0 to ram_depth-1;
+
 begin
 
 ------------------------------------------------------------------------
@@ -64,6 +71,17 @@ begin
             simulation_counter <= simulation_counter + 1;
             init_ram(ram_a_in);
             init_ram(ram_b_in);
+
+            int_sin <= integer(sin(real(simulation_counter)/150.0*2.0*math_pi)*32767.0);
+
+            if int_sin < -5000 then
+                triggered(0) <= '1';
+            else
+                triggered(0) <= '0';
+            end if;
+
+            triggered(1) <= triggered(0);
+            trigger <= triggered = "01";
 
             if simulation_counter < ram_array'length/2 then
                 write_data_to_ram(ram_a_in, simulation_counter*2, std_logic_vector(to_unsigned(simulation_counter*2, ram_a_in.data'length)));

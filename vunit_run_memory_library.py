@@ -39,6 +39,7 @@ generic_fpga_ram.add_source_files(ROOT / "fpga_internal_ram/dual_port_ram_generi
 generic_fpga_ram.add_source_files(ROOT / "fpga_internal_ram/arch_sim_generic_dual_port_ram.vhd")
 generic_fpga_ram.add_source_files(ROOT / "testbench/dual_port_ram/generic_dual_port_ram_tb.vhd")
 generic_fpga_ram.add_source_files(ROOT / "testbench/sample_buffer/sample_buffer_tb.vhd")
+generic_fpga_ram.add_source_files(ROOT / "testbench/sample_buffer/buffer_pointers_tb.vhd")
 
 VU.set_sim_option("nvc.sim_flags", ["-w"])
 
