@@ -33,7 +33,10 @@ package ram_port_generic_pkg is
     procedure init_ram (
         signal self_in : out ram_in_record);
 
-    function init_ram (self_in : ram_in_record) return ram_in_record;
+    procedure init_ram (
+        signal self_in : inout ram_in_array);
+
+    function init_ram (self_in : ram_in_array) return ram_in_array;
 
     procedure request_data_from_ram (
         signal self_in : out ram_in_record;
@@ -68,12 +71,25 @@ package body ram_port_generic_pkg is
         self_in.write_requested   <= '0';
     end init_ram;
 
-    function init_ram (self_in : ram_in_record) return ram_in_record
-    is
-        variable retval : ram_in_record := self_in;
+    procedure init_ram
+    (
+        signal self_in : inout ram_in_array
+    ) is
     begin
-        retval.read_is_requested := '0';
-        retval.write_requested := '0';
+        for i in self_in'range loop
+            self_in(i).read_is_requested <= '0';
+            self_in(i).write_requested <= '0';
+        end loop;
+    end init_ram;
+
+    function init_ram (self_in : ram_in_array) return ram_in_array
+    is
+        variable retval : ram_in_array(self_in'range) := self_in;
+    begin
+        for i in self_in'range loop
+            retval(i).read_is_requested := '0';
+            retval(i).write_requested := '0';
+        end loop;
         return retval;
     end init_ram;
 
