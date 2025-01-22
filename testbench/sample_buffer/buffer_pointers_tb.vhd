@@ -22,7 +22,7 @@ architecture vunit_simulation of buffer_pointers_tb is
     -----------------------------------
     -- simulation specific signals ----
 
-    package ram_port_pkg is new work.ram_port_generic_pkg generic map(g_ram_bit_width => 20, g_ram_depth_pow2 => 9);
+    package ram_port_pkg is new work.ram_port_generic_pkg generic map(g_ram_bit_width => 20, g_ram_depth_pow2 => 7);
     use ram_port_pkg.all;
 
     signal int_sin : integer := 0;
@@ -30,7 +30,10 @@ architecture vunit_simulation of buffer_pointers_tb is
     signal ram_write_enabled : boolean := false;
     signal write_counter : natural range 0 to ram_depth-1;
     signal sample_requested : boolean := false;
+    signal write_after_triggered : natural := ram_depth-1;
     -- signal read_counter : natural range 0 to ram_depth-1;
+
+    signal trigger_enabled : boolean := false;
 
 begin
 
@@ -54,10 +57,20 @@ begin
         if rising_edge(simulator_clock) then
             simulation_counter <= simulation_counter + 1;
 
-            if write_counter < ram_depth-1 then
-                write_counter <= write_counter + 1;
-            else
-                write_counter <= 0;
+            if write_after_triggered > 0 then
+                if write_counter < ram_depth-1  then
+                    write_counter <= write_counter + 1;
+                else
+                    write_counter <= 0;
+                end if;
+            end if;
+
+            trigger_enabled <= trigger_enabled or simulation_counter = 550;
+
+            if trigger_enabled then
+                if write_after_triggered > 0 then
+                    write_after_triggered <= write_after_triggered - 1;
+                end if;
             end if;
 
         end if; -- rising_edge
