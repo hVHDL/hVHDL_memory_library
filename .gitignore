@@ -5,3 +5,7 @@ vunit_out/
 *.cf
 *.o
 writefile.dat
+
+*.json
+*.fst
+*.fst.*
