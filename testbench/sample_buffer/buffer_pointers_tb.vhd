@@ -54,7 +54,7 @@ begin
 
 ------------------------------------------------------------------------
 
-    write_counter <= trigger.write_counter;
+    write_counter <= trigger.write_address_counter;
     write_after_triggered <= trigger.write_after_triggered;
 
     stimulus : process(simulator_clock)

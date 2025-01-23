@@ -10,7 +10,7 @@ package sample_trigger_generic_pkg is
         trigger_enabled       : boolean ;
         triggered             : boolean;
         ram_write_enabled     : boolean;
-        write_counter         : natural range 0 to g_ram_depth-1;
+        write_address_counter : natural range 0 to g_ram_depth-1;
         sample_requested      : boolean;
         write_after_triggered : natural range 0 to g_ram_depth-1;
 
@@ -32,11 +32,12 @@ package body sample_trigger_generic_pkg is
 ---------------------------------------------
     procedure create_trigger(signal self : inout sample_trigger_record; trigger_detected : in boolean) is
     begin
+
         if self.write_after_triggered > 0 then
-            if self.write_counter < g_ram_depth-1  then
-                self.write_counter <= self.write_counter + 1;
+            if self.write_address_counter < g_ram_depth-1  then
+                self.write_address_counter <= self.write_address_counter + 1;
             else
-                self.write_counter <= 0;
+                self.write_address_counter <= 0;
             end if;
         end if;
 
@@ -50,19 +51,15 @@ package body sample_trigger_generic_pkg is
 
         if last_trigger_detected(self) then
             self.trigger_enabled <= false;
-        end if;
-
-        if last_trigger_detected(self) then
             self.stop_sampling <= true;
         end if;
+
     end create_trigger;
 ---------------------------------------------
     function last_trigger_detected(self : sample_trigger_record) return boolean is
     begin
         return self.triggered and self.write_after_triggered = 0;
     end function;
-
-
 ---------------------------------------------
     procedure prime_trigger(signal self : inout sample_trigger_record; samples_after_trigger : natural) is
     begin
@@ -83,5 +80,4 @@ package body sample_trigger_generic_pkg is
         return (not self.stop_sampling);
     end sampling_enabled;
 ---------------------------------------------
-
 end package body sample_trigger_generic_pkg;

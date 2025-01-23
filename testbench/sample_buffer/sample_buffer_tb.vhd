@@ -22,7 +22,7 @@ architecture vunit_simulation of sample_buffer_tb is
     -----------------------------------
     -- simulation specific signals ----
 
-    package ram_port_pkg is new work.ram_port_generic_pkg generic map(g_ram_bit_width => 20, g_ram_depth_pow2 => 9);
+    package ram_port_pkg is new work.ram_port_generic_pkg generic map(g_ram_bit_width => 22, g_ram_depth_pow2 => 9);
     use ram_port_pkg.all;
 
     package sample_trigger_pkg is new work.sample_trigger_generic_pkg generic map(g_ram_depth => ram_depth);
@@ -102,7 +102,6 @@ begin
 
             CASE simulation_counter is
                 WHEN 40 => enable_sampling(sample_trigger);
-                WHEN 200 => prime_trigger(sample_trigger, 100);
                 WHEN 400 => prime_trigger(sample_trigger, 150);
                 WHEN 800 => prime_trigger(sample_trigger, 177);
                 WHEN others => --do nothing
