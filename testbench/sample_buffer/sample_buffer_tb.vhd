@@ -53,6 +53,8 @@ architecture vunit_simulation of sample_buffer_tb is
 
     signal sample_trigger : sample_trigger_record := init_trigger;
 
+    signal stop_sampling : boolean := true;
+
 begin
 
 ------------------------------------------------------------------------
@@ -87,14 +89,19 @@ begin
 
             int_sin <= integer(sin(real(simulation_counter)/150.0*2.0*math_pi)*32767.0);
 
-            write_data_to_ram(ram_a_in
-                , simulation_counter mod ram_depth
-                , std_logic_vector(to_signed(int_sin , ram_a_in.data'length))
-            );
-            if sample_triggered(sample_trigger, true) then
+            if last_trigger_detected(sample_trigger) then
+                stop_sampling <= true;
+            end if;
+
+            if sampling_enabled(sample_trigger) then
+                write_data_to_ram(ram_a_in
+                    , simulation_counter mod ram_depth
+                    , std_logic_vector(to_signed(int_sin , ram_a_in.data'length))
+                );
             end if;
 
             CASE simulation_counter is
+                WHEN 40 => enable_sampling(sample_trigger);
                 WHEN 200 => prime_trigger(sample_trigger, 100);
                 WHEN 400 => prime_trigger(sample_trigger, 150);
                 WHEN 800 => prime_trigger(sample_trigger, 177);

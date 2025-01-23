@@ -13,13 +13,17 @@ package sample_trigger_generic_pkg is
         write_counter         : natural range 0 to g_ram_depth-1;
         sample_requested      : boolean;
         write_after_triggered : natural range 0 to g_ram_depth-1;
+
+        stop_sampling : boolean;
     end record;
 
-    constant init_trigger : sample_trigger_record := (false,false, false, 0, false, g_ram_depth-1);
+    constant init_trigger : sample_trigger_record := (false,false, false, 0, false, g_ram_depth-1, true);
 
     procedure create_trigger(signal self : inout sample_trigger_record; trigger_detected : in boolean);
     procedure prime_trigger(signal self : inout sample_trigger_record; samples_after_trigger : natural);
     function last_trigger_detected(self : sample_trigger_record) return boolean;
+    procedure enable_sampling(signal self : inout sample_trigger_record);
+    function sampling_enabled(self : sample_trigger_record) return boolean;
 
 end package sample_trigger_generic_pkg;
 
@@ -47,6 +51,10 @@ package body sample_trigger_generic_pkg is
         if last_trigger_detected(self) then
             self.trigger_enabled <= false;
         end if;
+
+        if last_trigger_detected(self) then
+            self.stop_sampling <= true;
+        end if;
     end create_trigger;
 ---------------------------------------------
     function last_trigger_detected(self : sample_trigger_record) return boolean is
@@ -63,6 +71,17 @@ package body sample_trigger_generic_pkg is
             self.write_after_triggered <= samples_after_trigger;
         end if;
     end prime_trigger;
+---------------------------------------------
+    procedure enable_sampling(signal self : inout sample_trigger_record)
+    is
+    begin
+        self.stop_sampling <= false;
+    end enable_sampling;
+---------------------------------------------
+    function sampling_enabled(self : sample_trigger_record) return boolean is
+    begin
+        return (not self.stop_sampling);
+    end sampling_enabled;
 ---------------------------------------------
 
 end package body sample_trigger_generic_pkg;
