@@ -5,7 +5,7 @@ LIBRARY ieee  ;
 package sample_trigger_generic_pkg is
     generic (g_ram_depth : positive);
 
-    type trigger_record is record
+    type sample_trigger_record is record
         trigger_enabled       : boolean ;
         triggered             : boolean;
         ram_write_enabled     : boolean;
@@ -14,14 +14,16 @@ package sample_trigger_generic_pkg is
         write_after_triggered : natural range 0 to g_ram_depth-1;
     end record;
 
-    procedure create_trigger(signal self : inout trigger_record; trigger_detected : in boolean);
-    procedure prime_trigger(signal self : inout trigger_record);
+    constant init_trigger : sample_trigger_record := (false,false, false, 0, false, g_ram_depth-1);
+
+    procedure create_trigger(signal self : inout sample_trigger_record; trigger_detected : in boolean);
+    procedure prime_trigger(signal self : inout sample_trigger_record; samples_after_trigger : natural);
 
 end package sample_trigger_generic_pkg;
 
 package body sample_trigger_generic_pkg is
 
-    procedure create_trigger(signal self : inout trigger_record; trigger_detected : in boolean) is
+    procedure create_trigger(signal self : inout sample_trigger_record; trigger_detected : in boolean) is
     begin
         if self.write_after_triggered > 0 then
             if self.write_counter < g_ram_depth-1  then
@@ -42,10 +44,11 @@ package body sample_trigger_generic_pkg is
         end if;
     end create_trigger;
 
-    procedure prime_trigger(signal self : inout trigger_record) is
+    procedure prime_trigger(signal self : inout sample_trigger_record; samples_after_trigger : natural) is
     begin
         if not self.trigger_enabled then
             self.trigger_enabled <= true;
+            self.write_after_triggered <= samples_after_trigger;
         end if;
     end prime_trigger;
 
@@ -72,7 +75,6 @@ architecture vunit_simulation of buffer_pointers_tb is
     package sample_trigger_pkg is new work.sample_trigger_generic_pkg generic map(g_ram_depth => ram_depth);
     use sample_trigger_pkg.all;
 
-    constant init_trigger : trigger_record := (false,false, false, 0, false, ram_depth-1);
 
 
     constant clock_period      : time    := 1 ns;
@@ -92,7 +94,7 @@ architecture vunit_simulation of buffer_pointers_tb is
     signal write_after_triggered : natural := ram_depth-1;
     -- signal read_counter : natural range 0 to ram_depth-1;
 
-    signal trigger : trigger_record := init_trigger;
+    signal trigger : sample_trigger_record := init_trigger;
 
 begin
 
@@ -101,8 +103,6 @@ begin
     begin
         test_runner_setup(runner, runner_cfg);
         wait for simtime_in_clocks*clock_period;
-        -- check(ram_was_read);
-        -- check(last_ram_index_was_read, "last index was not read");
         test_runner_cleanup(runner); -- Simulation ends here
         wait;
     end process simtime;	
@@ -120,10 +120,10 @@ begin
         if rising_edge(simulator_clock) then
             simulation_counter <= simulation_counter + 1;
 
-            create_trigger(trigger, simulation_counter = 550);
+            create_trigger(trigger, simulation_counter mod 230 = 0);
 
             CASE simulation_counter is
-                WHEN 500 => prime_trigger(trigger);
+                WHEN 400 => prime_trigger(trigger, 90);
                 WHEN others => --do nothing
             end CASE;
 
