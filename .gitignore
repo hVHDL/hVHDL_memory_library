@@ -9,3 +9,4 @@ writefile.dat
 *.json
 *.fst
 *.fst.*
+*.toml
