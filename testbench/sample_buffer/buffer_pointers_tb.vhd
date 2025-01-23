@@ -18,7 +18,7 @@ architecture vunit_simulation of buffer_pointers_tb is
     use ram_port_pkg.all;
 
     type trigger_record is record
-        trigger_enabled : boolean ;
+        trigger_enabled       : boolean ;
         triggered             : boolean;
         ram_write_enabled     : boolean;
         write_counter         : natural range 0 to ram_depth-1;
@@ -38,14 +38,23 @@ architecture vunit_simulation of buffer_pointers_tb is
             end if;
         end if;
 
-        self.trigger_enabled <= self.trigger_enabled or trigger_detected;
+        self.triggered <= (self.triggered or trigger_detected) and self.trigger_enabled;
 
-        if self.trigger_enabled then
+        if self.triggered then
             if self.write_after_triggered > 0 then
                 self.write_after_triggered <= self.write_after_triggered - 1;
+            else
+                self.trigger_enabled <= false;
             end if;
         end if;
     end create_trigger;
+
+    procedure prime_trigger(signal self : inout trigger_record) is
+    begin
+        if not self.trigger_enabled then
+            self.trigger_enabled <= true;
+        end if;
+    end prime_trigger;
 
     constant clock_period      : time    := 1 ns;
     constant simtime_in_clocks : integer := 1500;
@@ -96,6 +105,12 @@ begin
             simulation_counter <= simulation_counter + 1;
 
             create_trigger(trigger, simulation_counter = 550);
+
+            CASE simulation_counter is
+                WHEN 500 => prime_trigger(trigger);
+                WHEN others => --do nothing
+            end CASE;
+
 
         end if; -- rising_edge
     end process stimulus;	
