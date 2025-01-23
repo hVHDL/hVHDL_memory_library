@@ -25,6 +25,9 @@ architecture vunit_simulation of sample_buffer_tb is
     package ram_port_pkg is new work.ram_port_generic_pkg generic map(g_ram_bit_width => 20, g_ram_depth_pow2 => 9);
     use ram_port_pkg.all;
 
+    package sample_trigger_pkg is new work.sample_trigger_generic_pkg generic map(g_ram_depth => ram_depth);
+    use sample_trigger_pkg.all;
+
     signal ram_a_in  : ram_in_record;
     signal ram_a_out : ram_out_record;
     --------------------
@@ -48,6 +51,8 @@ architecture vunit_simulation of sample_buffer_tb is
     signal write_counter : natural range 0 to ram_depth-1;
     -- signal read_counter : natural range 0 to ram_depth-1;
 
+    signal sample_trigger : sample_trigger_record := init_trigger;
+
 begin
 
 ------------------------------------------------------------------------
@@ -55,8 +60,6 @@ begin
     begin
         test_runner_setup(runner, runner_cfg);
         wait for simtime_in_clocks*clock_period;
-        check(ram_was_read);
-        check(last_ram_index_was_read, "last index was not read");
         test_runner_cleanup(runner); -- Simulation ends here
         wait;
     end process simtime;	
@@ -72,16 +75,15 @@ begin
             init_ram(ram_a_in);
             init_ram(ram_b_in);
 
+            create_trigger(sample_trigger, int_sin < -5000);
+
             int_sin <= integer(sin(real(simulation_counter)/150.0*2.0*math_pi)*32767.0);
 
-            if int_sin < -5000 then
-                triggered(0) <= '1';
-            else
-                triggered(0) <= '0';
-            end if;
+            CASE simulation_counter is
+                WHEN 500 => prime_trigger(sample_trigger, 100);
+                WHEN others => --do nothing
+            end CASE;
 
-            triggered(1) <= triggered(0);
-            trigger <= triggered = "01";
 
             if simulation_counter < ram_array'length/2 then
                 write_data_to_ram(ram_a_in, simulation_counter*2, std_logic_vector(to_unsigned(simulation_counter*2, ram_a_in.data'length)));

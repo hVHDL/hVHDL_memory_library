@@ -57,5 +57,3 @@ package body sample_trigger_generic_pkg is
 ---------------------------------------------
 
 end package body sample_trigger_generic_pkg;
-
-
