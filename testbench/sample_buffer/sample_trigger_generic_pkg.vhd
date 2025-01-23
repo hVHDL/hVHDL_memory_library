@@ -30,30 +30,42 @@ end package sample_trigger_generic_pkg;
 package body sample_trigger_generic_pkg is
 
 ---------------------------------------------
-    procedure create_trigger(signal self : inout sample_trigger_record; trigger_detected : in boolean) is
+    procedure create_trigger(
+        signal self : inout sample_trigger_record
+        ; trigger_detected : in boolean
+        ; event : in boolean) is
     begin
-
-        if self.write_after_triggered > 0 then
-            if self.write_address_counter < g_ram_depth-1  then
-                self.write_address_counter <= self.write_address_counter + 1;
-            else
-                self.write_address_counter <= 0;
-            end if;
-        end if;
-
         self.triggered <= (self.triggered or trigger_detected) and self.trigger_enabled;
 
-        if self.triggered then
+        if event then
             if self.write_after_triggered > 0 then
-                self.write_after_triggered <= self.write_after_triggered - 1;
+                if self.write_address_counter < g_ram_depth-1  then
+                    self.write_address_counter <= self.write_address_counter + 1;
+                else
+                    self.write_address_counter <= 0;
+                end if;
+            end if;
+
+
+            if self.triggered then
+                if self.write_after_triggered > 0 then
+                    self.write_after_triggered <= self.write_after_triggered - 1;
+                end if;
+            end if;
+
+            if last_trigger_detected(self) then
+                self.trigger_enabled <= false;
+                self.stop_sampling <= true;
             end if;
         end if;
 
-        if last_trigger_detected(self) then
-            self.trigger_enabled <= false;
-            self.stop_sampling <= true;
-        end if;
+    end create_trigger;
 
+    procedure create_trigger(
+        signal self : inout sample_trigger_record
+        ; trigger_detected : in boolean) is
+    begin
+        create_trigger(self, trigger_detected, event => true);
     end create_trigger;
 ---------------------------------------------
     function last_trigger_detected(self : sample_trigger_record) return boolean is

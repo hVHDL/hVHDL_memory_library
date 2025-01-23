@@ -89,10 +89,6 @@ begin
 
             int_sin <= integer(sin(real(simulation_counter)/150.0*2.0*math_pi)*32767.0);
 
-            if last_trigger_detected(sample_trigger) then
-                stop_sampling <= true;
-            end if;
-
             if sampling_enabled(sample_trigger) then
                 write_data_to_ram(ram_a_in
                     , simulation_counter mod ram_depth
