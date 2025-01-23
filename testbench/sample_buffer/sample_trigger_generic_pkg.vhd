@@ -19,6 +19,7 @@ package sample_trigger_generic_pkg is
 
     procedure create_trigger(signal self : inout sample_trigger_record; trigger_detected : in boolean);
     procedure prime_trigger(signal self : inout sample_trigger_record; samples_after_trigger : natural);
+    function last_trigger_detected(self : sample_trigger_record) return boolean;
 
 end package sample_trigger_generic_pkg;
 
@@ -40,11 +41,19 @@ package body sample_trigger_generic_pkg is
         if self.triggered then
             if self.write_after_triggered > 0 then
                 self.write_after_triggered <= self.write_after_triggered - 1;
-            else
-                self.trigger_enabled <= false;
             end if;
         end if;
+
+        if last_trigger_detected(self) then
+            self.trigger_enabled <= false;
+        end if;
     end create_trigger;
+---------------------------------------------
+    function last_trigger_detected(self : sample_trigger_record) return boolean is
+    begin
+        return self.triggered and self.write_after_triggered = 0;
+    end function;
+
 
 ---------------------------------------------
     procedure prime_trigger(signal self : inout sample_trigger_record; samples_after_trigger : natural) is

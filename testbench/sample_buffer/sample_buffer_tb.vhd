@@ -69,6 +69,14 @@ begin
 ------------------------------------------------------------------------
 
     stimulus : process(simulator_clock)
+
+        function sample_triggered(self : sample_trigger_record; trig_event : boolean) return boolean is
+            variable trigger_enabled : boolean;
+        begin
+            trigger_enabled := self.triggered and self.trigger_enabled and self.write_after_triggered > 0;
+            return trigger_enabled and trig_event;
+        end function;
+            
     begin
         if rising_edge(simulator_clock) then
             simulation_counter <= simulation_counter + 1;
@@ -79,16 +87,19 @@ begin
 
             int_sin <= integer(sin(real(simulation_counter)/150.0*2.0*math_pi)*32767.0);
 
+            write_data_to_ram(ram_a_in
+                , simulation_counter mod ram_depth
+                , std_logic_vector(to_signed(int_sin , ram_a_in.data'length))
+            );
+            if sample_triggered(sample_trigger, true) then
+            end if;
+
             CASE simulation_counter is
-                WHEN 500 => prime_trigger(sample_trigger, 100);
+                WHEN 200 => prime_trigger(sample_trigger, 100);
+                WHEN 400 => prime_trigger(sample_trigger, 150);
+                WHEN 800 => prime_trigger(sample_trigger, 177);
                 WHEN others => --do nothing
             end CASE;
-
-
-            if simulation_counter < ram_array'length/2 then
-                write_data_to_ram(ram_a_in, simulation_counter*2, std_logic_vector(to_unsigned(simulation_counter*2, ram_a_in.data'length)));
-                write_data_to_ram(ram_b_in, simulation_counter*2+1, std_logic_vector(to_unsigned(simulation_counter*2+1, ram_a_in.data'length)));
-            end if;
 
             if simulation_counter = ram_array'length/2 then
                 read_counter <= 0;
@@ -106,8 +117,6 @@ begin
                 output_is_correct       <= (get_ram_data(ram_a_out) = std_logic_vector(to_unsigned(ready_counter*2, ram_a_out.data'length)));
                 last_ram_index_was_read <= to_integer(unsigned(get_ram_data(ram_b_out))) = ram_array'high;
 
-                check(get_ram_data(ram_a_out) = std_logic_vector(to_unsigned(ready_counter*2   , ram_a_out.data'length)));
-                check(get_ram_data(ram_b_out) = std_logic_vector(to_unsigned(ready_counter*2+1 , ram_b_out.data'length)));
             end if;
             ram_was_read <= ram_was_read or ram_read_is_ready(ram_a_out);
 
