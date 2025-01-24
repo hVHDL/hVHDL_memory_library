@@ -1,5 +1,3 @@
-
-
 LIBRARY ieee  ; 
     USE ieee.NUMERIC_STD.all  ; 
     USE ieee.std_logic_1164.all  ; 
@@ -8,11 +6,11 @@ LIBRARY ieee  ;
 library vunit_lib;
 context vunit_lib.vunit_context;
 
-entity sample_buffer_tb is
+entity controlled_sample_tb is
   generic (runner_cfg : string);
 end;
 
-architecture vunit_simulation of sample_buffer_tb is
+architecture vunit_simulation of controlled_sample_tb is
 
     constant clock_period      : time    := 1 ns;
     constant simtime_in_clocks : integer := 1500;
@@ -34,15 +32,8 @@ architecture vunit_simulation of sample_buffer_tb is
     signal ram_b_in  : ram_in_record;
     signal ram_b_out : ram_out_record;
 
-    signal read_counter : natural := ram_array'length;
-    signal ready_counter : natural := 0;
-
-    signal ram_was_read : boolean := false;
 
     signal test_output : std_logic_vector(ram_a_out.data'range) := (others => '0');
-
-    signal output_is_correct : boolean := false;
-    signal last_ram_index_was_read : boolean := false;
 
     signal int_sin : integer := 0;
     signal triggered : std_logic_vector(1 downto 0) := "00";
@@ -52,8 +43,9 @@ architecture vunit_simulation of sample_buffer_tb is
     -- signal read_counter : natural range 0 to ram_depth-1;
 
     signal sample_trigger : sample_trigger_record := init_trigger;
+    signal write_address: natural range 0 to ram_depth-1 := 0;
 
-    signal stop_sampling : boolean := true;
+    signal counter : natural := 150;
 
 begin
 
@@ -88,11 +80,13 @@ begin
 
             sample_event := (simulation_counter mod 3) = 0;
 
-            if sampling_enabled(sample_trigger) then
+            if sample_event then
+                write_address <= (write_address + 1) mod ram_depth;
                 write_data_to_ram(ram_a_in
-                    , simulation_counter mod ram_depth
+                    , write_address
                     , std_logic_vector(to_signed(int_sin , ram_a_in.data'length))
                 );
+
             end if;
 
             CASE simulation_counter is
@@ -101,25 +95,6 @@ begin
                 WHEN 800 => prime_trigger(sample_trigger, 177);
                 WHEN others => --do nothing
             end CASE;
-
-            if simulation_counter = ram_array'length/2 then
-                read_counter <= 0;
-            end if;
-
-            if read_counter < ram_array'length/2 then
-                read_counter <= read_counter + 1;
-                request_data_from_ram(ram_a_in, read_counter*2);
-                request_data_from_ram(ram_b_in, read_counter*2+1);
-            end if;
-
-            if ram_read_is_ready(ram_a_out) then
-                ready_counter           <= ready_counter + 1;
-                test_output             <= get_ram_data(ram_a_out);
-                output_is_correct       <= (get_ram_data(ram_a_out) = std_logic_vector(to_unsigned(ready_counter*2, ram_a_out.data'length)));
-                last_ram_index_was_read <= to_integer(unsigned(get_ram_data(ram_b_out))) = ram_array'high;
-
-            end if;
-            ram_was_read <= ram_was_read or ram_read_is_ready(ram_a_out);
 
         end if; -- rising_edge
     end process stimulus;	
