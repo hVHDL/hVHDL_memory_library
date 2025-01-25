@@ -14,10 +14,11 @@ package sample_trigger_generic_pkg is
         sample_requested      : boolean;
         write_after_triggered : natural range 0 to g_ram_depth-1;
 
+        read_counter : natural range 0 to g_ram_depth-1;
         stop_sampling : boolean;
     end record;
 
-    constant init_trigger : sample_trigger_record := (false,false, false, 0, false, g_ram_depth-1, true);
+    constant init_trigger : sample_trigger_record := (false,false, false, 0, false, g_ram_depth-1, 0, true);
 
     procedure create_trigger(signal self : inout sample_trigger_record; trigger_detected : in boolean);
     procedure prime_trigger(signal self : inout sample_trigger_record; samples_after_trigger : natural);
