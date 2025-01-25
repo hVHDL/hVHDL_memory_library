@@ -24,6 +24,7 @@ package sample_trigger_generic_pkg is
     function last_trigger_detected(self : sample_trigger_record) return boolean;
     procedure enable_sampling(signal self : inout sample_trigger_record);
     function sampling_enabled(self : sample_trigger_record) return boolean;
+    function get_sample_address(self : sample_trigger_record) return natural;
 
 end package sample_trigger_generic_pkg;
 
@@ -91,5 +92,10 @@ package body sample_trigger_generic_pkg is
     begin
         return (not self.stop_sampling);
     end sampling_enabled;
+---------------------------------------------
+    function get_sample_address(self : sample_trigger_record) return natural is
+    begin
+        return self.write_address_counter;
+    end get_sample_address;
 ---------------------------------------------
 end package body sample_trigger_generic_pkg;
