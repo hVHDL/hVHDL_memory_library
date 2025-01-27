@@ -15,10 +15,11 @@ package sample_trigger_generic_pkg is
         write_after_triggered : natural range 0 to g_ram_depth-1;
 
         read_counter : natural range 0 to g_ram_depth-1;
+        read_address : natural range 0 to g_ram_depth-1;
         stop_sampling : boolean;
     end record;
 
-    constant init_trigger : sample_trigger_record := (false,false, false, 0, false, g_ram_depth-1, 0, true);
+    constant init_trigger : sample_trigger_record := (false,false, false, 0, false, g_ram_depth-1, 0, 0, true);
 
     procedure create_trigger(signal self : inout sample_trigger_record; trigger_detected : in boolean);
     procedure prime_trigger(signal self : inout sample_trigger_record; samples_after_trigger : natural);
@@ -26,6 +27,7 @@ package sample_trigger_generic_pkg is
     procedure enable_sampling(signal self : inout sample_trigger_record);
     function sampling_enabled(self : sample_trigger_record) return boolean;
     function get_sample_address(self : sample_trigger_record) return natural;
+    procedure calculate_read_address(signal self : inout sample_trigger_record);
 
 end package sample_trigger_generic_pkg;
 
@@ -57,7 +59,8 @@ package body sample_trigger_generic_pkg is
 
             if last_trigger_detected(self) then
                 self.trigger_enabled <= false;
-                self.stop_sampling <= true;
+                self.stop_sampling   <= true;
+                self.read_counter    <= 0;
             end if;
         end if;
 
@@ -96,7 +99,13 @@ package body sample_trigger_generic_pkg is
 ---------------------------------------------
     function get_sample_address(self : sample_trigger_record) return natural is
     begin
-        return self.write_address_counter;
+        return self.read_address;
     end get_sample_address;
+---------------------------------------------
+    procedure calculate_read_address(signal self : inout sample_trigger_record) is
+    begin
+        self.read_address <= self.write_address_counter + self.read_counter;
+        self.read_counter <= self.read_counter + 1;
+    end calculate_read_address;
 ---------------------------------------------
 end package body sample_trigger_generic_pkg;
