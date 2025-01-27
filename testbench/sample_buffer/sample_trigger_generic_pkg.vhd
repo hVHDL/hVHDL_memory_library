@@ -9,18 +9,17 @@ package sample_trigger_generic_pkg is
     type sample_trigger_record is record
         trigger_enabled       : boolean ;
         triggered             : boolean;
-        ram_write_enabled     : boolean;
         write_address         : natural range 0 to g_ram_depth-1;
         write_counter         : natural range 0 to g_ram_depth-1;
         sample_requested      : boolean;
         write_after_triggered : natural range 0 to g_ram_depth-1;
 
-        read_counter : natural range 0 to g_ram_depth-1;
         read_address : natural range 0 to g_ram_depth-1;
+        read_counter : natural range 0 to g_ram_depth-1;
         stop_sampling : boolean;
     end record;
 
-    constant init_trigger : sample_trigger_record := (false , false , false , 0 , 0 , false , g_ram_depth-1 , 0 , 0 , true);
+    constant init_trigger : sample_trigger_record := (false , false , 0 , 0 , false , g_ram_depth-1 , 0 , 0 , true);
 
     procedure create_trigger(
         signal self        : inout sample_trigger_record
@@ -109,7 +108,7 @@ package body sample_trigger_generic_pkg is
 ---------------------------------------------
     function sampling_enabled(self : sample_trigger_record) return boolean is
     begin
-        return (not self.stop_sampling);
+        return (self.stop_sampling = false);
     end sampling_enabled;
 ---------------------------------------------
     function get_write_address(self : sample_trigger_record) return natural is
