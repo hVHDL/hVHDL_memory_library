@@ -86,8 +86,7 @@ package body sample_trigger_generic_pkg is
         end if;
     end prime_trigger;
 ---------------------------------------------
-    procedure enable_sampling(signal self : inout sample_trigger_record)
-    is
+    procedure enable_sampling(signal self : inout sample_trigger_record) is
     begin
         self.stop_sampling <= false;
     end enable_sampling;
@@ -103,9 +102,16 @@ package body sample_trigger_generic_pkg is
     end get_sample_address;
 ---------------------------------------------
     procedure calculate_read_address(signal self : inout sample_trigger_record) is
+        variable next_address : natural;
     begin
-        self.read_address <= self.write_address_counter + self.read_counter;
-        self.read_counter <= self.read_counter + 1;
+        next_address := self.write_address_counter + self.read_counter;
+        self.read_address <= next_address mod g_ram_depth;
+
+        if self.read_counter < g_ram_depth-1 then
+            self.read_counter <= self.read_counter + 1;
+        else
+            self.read_counter <= 0;
+        end if;
     end calculate_read_address;
 ---------------------------------------------
 end package body sample_trigger_generic_pkg;
