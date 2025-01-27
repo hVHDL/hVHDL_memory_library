@@ -93,10 +93,11 @@ package body sample_trigger_generic_pkg is
     procedure prime_trigger(signal self : inout sample_trigger_record; samples_after_trigger : natural) is
     begin
         if not self.trigger_enabled then
-            self.write_counter <= 0;
-            self.read_counter <= 0;
-            self.trigger_enabled <= true;
+            self.write_counter         <= 0;
+            self.read_counter          <= 0;
+            self.trigger_enabled       <= true;
             self.write_after_triggered <= samples_after_trigger;
+            self.stop_sampling         <= false;
         end if;
     end prime_trigger;
 ---------------------------------------------

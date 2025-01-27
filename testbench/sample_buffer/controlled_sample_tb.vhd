@@ -99,7 +99,6 @@ begin
             end if;
 
             CASE simulation_counter is
-                WHEN 40  => enable_sampling(sample_trigger);
                 WHEN 398 => prime_trigger(sample_trigger, 20);
                 WHEN 800 => prime_trigger(sample_trigger, 25); 
                 WHEN others => --do nothing
