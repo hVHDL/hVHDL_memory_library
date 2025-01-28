@@ -7,6 +7,7 @@ package ram_port_generic_pkg is
             ;g_ram_depth_pow2 : natural := 10);
 
     alias ram_bit_width is g_ram_bit_width;
+    alias ram_depth_pow2 is g_ram_depth_pow2;
     constant ram_depth : natural := 2**g_ram_depth_pow2;
 
     subtype ramtype     is std_logic_vector(ram_bit_width-1 downto 0);
