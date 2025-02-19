@@ -45,6 +45,8 @@ generic_fpga_ram.add_source_files(ROOT / "testbench/sample_buffer/buffer_pointer
 generic_fpga_ram.add_source_files(ROOT / "testbench/sample_buffer/controlled_sample_tb.vhd")
 
 generic_fpga_ram.add_source_files(ROOT / "testbench/hyperram/hyperram_command_frames_tb.vhd")
+
+generic_fpga_ram.add_source_files(ROOT / "testbench/hyperram/hyperram_interface_pkg.vhd")
 generic_fpga_ram.add_source_files(ROOT / "testbench/hyperram/hyperram_io_tb.vhd")
 
 VU.set_sim_option("nvc.sim_flags", ["-w"])
