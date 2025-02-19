@@ -22,17 +22,26 @@ architecture vunit_simulation of hyperram_io_tb is
     signal cs   : std_logic_vector(1 downto 0) := "11";
     signal cs_counter : natural := 0;
 
-    signal rwds : std_logic_vector(1 downto 0) := "11";
-    signal rwds_counter : natural := 0;
 
-    signal dir_is_out_when_1 : std_logic_vector(1 downto 0) := "00";
-    signal dir_counter : natural := 0;
+    signal rwds                : std_logic_vector(1 downto 0) := "11";
+    signal rwds_counter        : natural                      := 0;
+    signal rwds_dir_out_when_1 : std_logic_vector(1 downto 0) := "00";
+    signal rwds_dir_counter    : natural                      := 0;
 
-    signal dq   : std_logic_vector(15 downto 0);
+    signal dq0                : std_logic_vector(15 downto 0);
+    signal dq1                : std_logic_vector(15 downto 0);
+    signal dq_counter        : natural                        := 0;
+    signal dq_dir_out_when_1 : std_logic_vector(1 downto 0)   := "00";
+    signal dq_dir_counter    : natural                        := 0;
 
     type bytearray is array(natural range <>) of std_logic_vector(7 downto 0);
-    signal transmit_buffer : bytearray(5 downto 0) := (x"aa", x"bb", x"cc", x"dd", x"ee", x"ff"); 
+
+    signal transmit_counter : natural := 0;
     type wordarray is array(natural range <>) of std_logic_vector(15 downto 0);
+    signal transmit_buffer0 : wordarray(5 downto 0);
+    signal transmit_buffer1 : wordarray(5 downto 0);
+
+    signal transmit_state_counter : natural := 0;
 
 begin
 
@@ -67,27 +76,44 @@ begin
             simulation_counter <= simulation_counter + 1;
 
             create_io_counter(cs_counter   , cs);
-            create_io_counter(rwds_counter , rwds);
-            create_io_counter(dir_counter  , dir_is_out_when_1 , "00");
 
-            if rwds_counter > 0 then
-                rwds_counter <= rwds_counter - 1;
-            end if;
+            create_io_counter(rwds_dir_counter , rwds_dir_out_when_1 , "00");
+            create_io_counter(dq_dir_counter   , dq_dir_out_when_1   , "00");
+            transmit_buffer0 <= transmit_buffer0(transmit_buffer0'left-1 downto 0) & x"0000";
+            transmit_buffer1 <= transmit_buffer1(transmit_buffer0'left-1 downto 0) & x"0000";
 
+            CASE transmit_state_counter is
+                WHEN 0 =>
+                    if rwds_dir_counter = 1 then
+                        rwds_dir_counter <= 6;
+                        rwds_dir_out_when_1 <= "11";
+                        transmit_state_counter <= 2;
+                    end if;
+                WHEN others => --do nothing
+            end CASE;
 
             CASE simulation_counter is
                 WHEN 10 => 
                     cs_counter <= 6;
                     cs <= "00";
-                    rwds_counter <= 6;
-                    rwds <= "00";
-                    dir_counter <= 6;
-                    dir_is_out_when_1 <= "00";
+
+                    rwds                <= "00";
+                    rwds_dir_counter    <= 6;
+                    rwds_dir_out_when_1 <= "00";
+
+                    dq_dir_out_when_1 <= "11";
+                    dq_dir_counter    <= 3;
+                    transmit_buffer0  <= (x"aaaa", x"bbbb", x"cccc", x"0000", x"0000", x"0000");
+                    transmit_buffer1  <= (x"ffff", x"ffff", x"ffff", x"0000", x"ffff", x"ffff");
+
                 WHEN others => -- do nothing
             end CASE;
 
         end if; -- rising_edge
     end process stimulus;	
+
+    dq0 <= transmit_buffer0(transmit_buffer0'left);
+    dq1 <= transmit_buffer1(transmit_buffer0'left);
 ------------------------------------------------------------------------
     ddr : process(simulator_clock)
     begin
