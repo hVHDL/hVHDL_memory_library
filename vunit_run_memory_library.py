@@ -32,7 +32,6 @@ lib.add_source_files(ROOT / "fpga_memory_interface_tests/dual_port_ram_interface
 lib.add_source_files(ROOT / "fpga_memory_interface_tests/ram_read_tb.vhd")
 lib.add_source_files(ROOT / "fpga_memory_interface_tests/ram_write_tb.vhd")
 
-lib.add_source_files(ROOT / "testbench/hyperram/hyperram_command_frames_tb.vhd")
 
 generic_fpga_ram = VU.add_library("generic_fpga_ram")
 generic_fpga_ram.add_source_files(ROOT / "fpga_internal_ram/dual_port_ram_generic_pkg.vhd")
@@ -44,6 +43,9 @@ generic_fpga_ram.add_source_files(ROOT / "testbench/dual_port_ram/generic_dual_p
 generic_fpga_ram.add_source_files(ROOT / "testbench/sample_buffer/sample_buffer_tb.vhd")
 generic_fpga_ram.add_source_files(ROOT / "testbench/sample_buffer/buffer_pointers_tb.vhd")
 generic_fpga_ram.add_source_files(ROOT / "testbench/sample_buffer/controlled_sample_tb.vhd")
+
+generic_fpga_ram.add_source_files(ROOT / "testbench/hyperram/hyperram_command_frames_tb.vhd")
+generic_fpga_ram.add_source_files(ROOT / "testbench/hyperram/hyperram_io_tb.vhd")
 
 VU.set_sim_option("nvc.sim_flags", ["-w"])
 
