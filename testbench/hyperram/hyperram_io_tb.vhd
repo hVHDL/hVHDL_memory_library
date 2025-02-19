@@ -50,13 +50,16 @@ architecture vunit_simulation of hyperram_io_tb is
     function write_to(mem0_reg1 : std_logic; address : natural) return wordarray is
         variable hyperram_header : std_logic_vector(47 downto 0);
         variable retval : wordarray(5 downto 0) := (others => (others => '0'));
+        variable std_address : std_logic_vector(31 downto 0);
     begin
+        std_address := std_logic_vector(to_unsigned(address, 32));
+
         hyperram_header(transaction_type_1_read_0_write'range)         := "1";
         hyperram_header(select_memory_with_1_and_register_with_0'high) := mem0_reg1;
         hyperram_header(linear_burst_with_0_wrapped_with_1'range)      := "0";
-        hyperram_header(row_and_upper_column_address'range)            := to_std_logic(0,13);
-        hyperram_header(reserved'range)                                := to_std_logic(0,0);
-        hyperram_header(lower_column_address'range)                    := to_std_logic(0,3);
+        hyperram_header(row_and_upper_column_address'range)            := std_address(31 downto 3);
+        hyperram_header(reserved'range)                                := to_std_logic(0,13);
+        hyperram_header(lower_column_address'range)                    := std_address(2 downto 0);
 
         retval(5) := hyperram_header(47 downto 32);
         retval(4) := hyperram_header(31 downto 16);
@@ -126,7 +129,7 @@ begin
 
                     dq_dir_out_when_1 <= "11";
                     dq_dir_counter    <= 3;
-                    transmit_buffer0  <= (x"aaaa", x"bbbb", x"cccc", x"0000", x"0000", x"0000");
+                    transmit_buffer0  <= write_to(mem, 10);
                     transmit_buffer1  <= (x"ffff", x"ffff", x"ffff", x"0000", x"ffff", x"ffff");
 
                 WHEN others => -- do nothing
