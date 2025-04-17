@@ -19,7 +19,7 @@ package multi_port_ram_pkg is
 
     type ram_read_in_record is record
         address : ram_address;
-        read_is_requested : std_logic;
+        read_requested : std_logic;
     end record;
 
     type ram_read_out_record is record
@@ -36,13 +36,13 @@ package multi_port_ram_pkg is
     type ram_read_in_array  is array (natural range <>) of ram_read_in_record;
     type ram_read_out_array is array (natural range <>) of ram_read_out_record;
 
-    procedure init_ram_read (
+    procedure init_mp_ram_read (
         signal self_read_in : out ram_read_in_record);
 
-    procedure init_ram_read (
+    procedure init_mp_ram_read (
         signal self_read_in : out ram_read_in_array);
 
-    procedure init_ram (
+    procedure init_mp_ram (
         signal self_read_in : out ram_read_in_array;
         signal self_write_in : out ram_write_in_record);
 
@@ -68,34 +68,34 @@ end package multi_port_ram_pkg;
 
 package body multi_port_ram_pkg is
 
-    procedure init_ram_read
+    procedure init_mp_ram_read
     (
         signal self_read_in : out ram_read_in_record
     ) is
     begin
-        self_read_in.read_is_requested <= '0';
-    end init_ram_read;
+        self_read_in.read_requested <= '0';
+    end init_mp_ram_read;
 
-    procedure init_ram_read
+    procedure init_mp_ram_read
     (
         signal self_read_in : out ram_read_in_array
     ) is
     begin
         for i in self_read_in'range loop
             self_read_in(i).address <= 0;
-            self_read_in(i).read_is_requested <= '0';
+            self_read_in(i).read_requested <= '0';
         end loop;
-    end init_ram_read;
+    end init_mp_ram_read;
 ------------------------------------------------------------------------
-    procedure init_ram
+    procedure init_mp_ram
     (
         signal self_read_in : out ram_read_in_array;
         signal self_write_in : out ram_write_in_record
     ) is
     begin
-        init_ram_read(self_read_in);
+        init_mp_ram_read(self_read_in);
         self_write_in.write_requested  <= '0';
-    end init_ram;
+    end init_mp_ram;
 ------------------------------
 ------------------------------
     procedure request_data_from_ram
@@ -105,20 +105,9 @@ package body multi_port_ram_pkg is
     ) is
     begin
         self_read_in.address <= address;
-        self_read_in.read_is_requested <= '1';
+        self_read_in.read_requested <= '1';
     end request_data_from_ram;
 
-    procedure init_ram
-    (
-        signal self_read_in1 : out ram_read_in_record;
-        signal self_read_in2 : out ram_read_in_record;
-        signal self_write_in : out ram_write_in_record
-    ) is
-    begin
-        self_read_in1.read_is_requested <= '0';
-        self_read_in2.read_is_requested <= '0';
-        self_write_in.write_requested  <= '0';
-    end init_ram;
 ------------------------------
     function ram_read_is_ready
     (

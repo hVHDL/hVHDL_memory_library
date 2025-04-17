@@ -22,16 +22,23 @@ architecture vunit_simulation of generic_multi_port_ram_tb is
     -----------------------------------
     -- simulation specific signals ----
 
+    package mp_ram_pkg is new work.multi_port_ram_pkg generic map(g_ram_bit_width => 20, g_ram_depth_pow2 => 9);
+    use mp_ram_pkg.all;
+
+    signal ram_read_in : ram_read_in_array(0 to 1);
+    signal ram_read_out : ram_read_out_array(ram_read_in'range);
+    signal ram_write_in : ram_write_in_record;
+
     package ram_port_pkg is new work.ram_port_generic_pkg generic map(g_ram_bit_width => 20, g_ram_depth_pow2 => 9);
     use ram_port_pkg.all;
 
-    signal ram_a_in  : ram_in_array(0 to 1);
-    signal ram_a_out : ram_out_array(0 to 1);
-    signal ram_b_in  : ram_in_array(0 to 1);
-    signal ram_b_out : ram_out_array(0 to 1);
+    signal ram_a_in  : ram_in_array  (ram_read_in'range) ;
+    signal ram_a_out : ram_out_array (ram_read_in'range) ;
+    signal ram_b_in  : ram_in_array  (ram_read_in'range) ;
+    signal ram_b_out : ram_out_array (ram_read_in'range) ;
     --------------------
 
-    signal read_counter : natural := ram_array'length;
+    signal read_counter : natural := ram_port_pkg.ram_array'length;
     signal ready_counter : natural := 0;
 
     signal ram_was_read : boolean := false;
@@ -41,12 +48,6 @@ architecture vunit_simulation of generic_multi_port_ram_tb is
     signal output_is_correct : boolean := false;
     signal last_ram_index_was_read : boolean := false;
 
-    package mp_ram_pkg is new work.multi_port_ram_pkg generic map(g_ram_bit_width => 20, g_ram_depth_pow2 => 9);
-    use mp_ram_pkg.all;
-
-    signal ram_read_in : ram_read_in_array(ram_a_in'range);
-    signal ram_read_out : ram_read_out_array(ram_a_in'range);
-    signal ram_write_in : ram_write_in_record;
 
 begin
 
@@ -69,8 +70,7 @@ begin
     begin
         if rising_edge(simulator_clock) then
             simulation_counter <= simulation_counter + 1;
-            -- init_ram(ram_a_in);
-            -- init_ram(ram_b_in);
+            init_mp_ram(ram_read_in,ram_write_in);
 
         end if; -- rising_edge
     end process stimulus;	
@@ -89,7 +89,7 @@ begin
 
         ram_a_in(i) <= (
             address            => ram_read_in(i).address
-            ,read_is_requested => ram_read_in(i).read_is_requested
+            ,read_is_requested => ram_read_in(i).read_requested
             ,data              => (others => '0')
             ,write_requested   => '0');
 
