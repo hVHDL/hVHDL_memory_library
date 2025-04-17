@@ -41,6 +41,13 @@ architecture vunit_simulation of generic_multi_port_ram_tb is
     signal output_is_correct : boolean := false;
     signal last_ram_index_was_read : boolean := false;
 
+    package mp_ram_pkg is new work.multi_port_ram_pkg generic map(g_ram_bit_width => 20, g_ram_depth_pow2 => 9);
+    use mp_ram_pkg.all;
+
+    signal ram_read_in : ram_read_in_array(ram_a_in'range);
+    signal ram_read_out : ram_read_out_array(ram_a_in'range);
+    signal ram_write_in : ram_write_in_record;
+
 begin
 
 ------------------------------------------------------------------------
@@ -78,7 +85,23 @@ begin
         ram_a_out(i)  ,
         --------------
         ram_b_in(i)  ,
-        ram_b_out(i));
+        open);
+
+        ram_a_in(i) <= (
+            address            => ram_read_in(i).address
+            ,read_is_requested => ram_read_in(i).read_is_requested
+            ,data              => (others => '0')
+            ,write_requested   => '0');
+
+        ram_read_out(i) <= (
+            data => ram_a_out(i).data
+            ,data_is_ready => ram_a_out(i).data_is_ready);
+
+        ram_b_in(i) <= (
+            address            => ram_write_in.address
+            ,read_is_requested => '0'
+            ,data              => ram_write_in.data
+            ,write_requested   => ram_write_in.write_requested);
     end generate;
     
 ------------------------------------------------------------------------
