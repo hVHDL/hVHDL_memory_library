@@ -25,7 +25,7 @@ architecture vunit_simulation of generic_multi_port_ram_tb is
     package mp_ram_pkg is new work.multi_port_ram_pkg generic map(g_ram_bit_width => 20, g_ram_depth_pow2 => 9);
     use mp_ram_pkg.all;
 
-    signal ram_read_in : ram_read_in_array(0 to 1);
+    signal ram_read_in : ram_read_in_array(0 to 3);
     signal ram_read_out : ram_read_out_array(ram_read_in'range);
     signal ram_write_in : ram_write_in_record;
 
