@@ -3,14 +3,19 @@ library ieee;
     use ieee.std_logic_1164.all;
     use ieee.numeric_std.all;
 
-    use work.ram_configuration_pkg.all;
-
 package multi_port_ram_pkg is
+    generic (g_ram_bit_width : natural := 16
+            ;g_ram_depth_pow2 : natural := 10);
 
-    -- move these to separate package
+    alias ram_bit_width is g_ram_bit_width;
+    alias ram_depth_pow2 is g_ram_depth_pow2;
+    constant ram_depth : natural := 2**g_ram_depth_pow2;
+
     subtype ramtype     is std_logic_vector(ram_bit_width-1 downto 0);
     subtype ram_address is natural range 0 to ram_depth-1;
-    subtype ram_array   is work.ram_configuration_pkg.ram_array;
+    subtype address_integer is natural range 0 to ram_depth-1;
+
+    type ram_array is array (natural range 0 to ram_depth-1) of ramtype;
 
     type ram_read_in_record is record
         address : ram_address;
@@ -41,12 +46,6 @@ package multi_port_ram_pkg is
         signal self_read_in : out ram_read_in_array;
         signal self_write_in : out ram_write_in_record);
 
-    -- TODO : remove as obsolete
-    procedure init_ram (
-        signal self_read_in1 : out ram_read_in_record;
-        signal self_read_in2 : out ram_read_in_record;
-        signal self_write_in : out ram_write_in_record);
-
     procedure request_data_from_ram (
         signal self_read_in : out ram_read_in_record;
         address : in natural);
@@ -57,8 +56,6 @@ package multi_port_ram_pkg is
     function get_ram_data ( self_read_out : ram_read_out_record)
         return std_logic_vector;
 
-    function get_uint_ram_data ( self_read_out : ram_read_out_record)
-        return integer;
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
     procedure write_data_to_ram (
@@ -163,7 +160,7 @@ package body multi_port_ram_pkg is
     ) is
     begin
         self_write_in.address <= address;
-        self_write_in.data <= data;
+        self_write_in.data    <= data;
         self_write_in.write_requested <= '1';
     end write_data_to_ram;
 ------------------------------------------------------------------------
