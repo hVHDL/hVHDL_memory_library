@@ -49,6 +49,8 @@ generic_fpga_ram.add_source_files(ROOT / "testbench/hyperram/hyperram_command_fr
 generic_fpga_ram.add_source_files(ROOT / "testbench/hyperram/hyperram_interface_pkg.vhd")
 generic_fpga_ram.add_source_files(ROOT / "testbench/hyperram/hyperram_io_tb.vhd")
 
-VU.set_sim_option("nvc.sim_flags", ["-w"])
+generic_fpga_ram.add_source_files(ROOT / "testbench/multi_port_ram/generic_multi_port_ram_tb.vhd")
+
+# VU.set_sim_option("nvc.sim_flags", ["-w"])
 
 VU.main()
