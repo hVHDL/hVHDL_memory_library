@@ -98,6 +98,18 @@ architecture vunit_simulation of multi_write_ram_tb is
     signal ram_b_in  : ram_in_array(ram_a_in'range);
     signal ram_b_out : ram_out_array(ram_a_in'range);
 
+    function calculate_ram_initial_values return ram_port_pkg.ram_array 
+    is
+        variable initial_ram_contents : ram_port_pkg.ram_array;
+    begin
+        for i in initial_ram_contents'range loop
+            initial_ram_contents(i) := uint_to_slv(i);
+        end loop;
+        return initial_ram_contents;
+    end calculate_ram_initial_values;
+
+    constant ram_initial_contents : ram_port_pkg.ram_array := calculate_ram_initial_values;
+
 begin
 
 ------------------------------------------------------------------------
@@ -129,7 +141,7 @@ begin
     create_rams :
     for i in ram_read_in'range generate
         u_dpram : entity work.generic_dual_port_ram
-        generic map(ram_port_pkg)
+        generic map(ram_port_pkg, ram_initial_contents)
         port map(
         simulator_clock ,
         ram_a_in(i)     ,
@@ -154,6 +166,5 @@ begin
             ,data              => ram_write_in(0).data
             ,write_requested   => ram_write_in(0).write_requested);
     end generate;
-
 ------------------------------------------------------------------------
 end vunit_simulation;
