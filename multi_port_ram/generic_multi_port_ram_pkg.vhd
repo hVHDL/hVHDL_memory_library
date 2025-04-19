@@ -61,8 +61,10 @@ package generic_multi_port_ram_pkg is
     procedure write_data_to_ram (
         signal self_write_in : out ram_write_in_record;
         address : in natural;
-
         data    : in std_logic_vector);
+
+    function uint_to_slv(a : integer) return std_logic_vector;
+    function slv_to_uint(a : std_logic_vector) return natural;
 ------------------------------------------------------------------------
 end package generic_multi_port_ram_pkg;
 
@@ -153,22 +155,16 @@ package body generic_multi_port_ram_pkg is
         self_write_in.write_requested <= '1';
     end write_data_to_ram;
 ------------------------------------------------------------------------
+    function uint_to_slv(a : integer) return std_logic_vector is
+    begin
+        return std_logic_vector(to_unsigned(a, ram_bit_width));
+    end uint_to_slv;
+------------------------------------------------------------------------
+    function slv_to_uint(a : std_logic_vector) return natural is
+    begin
+        return to_integer(unsigned(a));
+    end slv_to_uint;
+------------------------------------------------------------------------
 end package body generic_multi_port_ram_pkg;
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
-library ieee;
-    use ieee.std_logic_1164.all;
-    use ieee.numeric_std.all;
-
-entity generic_multi_port_ram is
-    generic(package ram_port_pkg is new work.generic_multi_port_ram_pkg generic map(<>)
-            ;initial_values : ram_port_pkg.ram_array := (others => (others => '1')));
-    port (
-        clock         : in std_logic
-        ;ram_read_in  : in ram_port_pkg.ram_read_in_array
-        ;ram_read_out : out ram_port_pkg.ram_read_out_array
-        --------------------
-        ;ram_write  : in ram_port_pkg.ram_write_in_record
-    );
-    use ram_port_pkg.all;
-end entity generic_multi_port_ram;
