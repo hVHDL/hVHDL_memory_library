@@ -3,7 +3,7 @@ library ieee;
     use ieee.std_logic_1164.all;
     use ieee.numeric_std.all;
 
-package multi_port_ram_pkg is
+package generic_multi_port_ram_pkg is
     generic (g_ram_bit_width : natural := 16
             ;g_ram_depth_pow2 : natural := 10);
 
@@ -11,8 +11,8 @@ package multi_port_ram_pkg is
     alias ram_depth_pow2 is g_ram_depth_pow2;
     constant ram_depth : natural := 2**g_ram_depth_pow2;
 
-    subtype ramtype     is std_logic_vector(ram_bit_width-1 downto 0);
-    subtype ram_address is natural range 0 to ram_depth-1;
+    subtype ramtype         is std_logic_vector(ram_bit_width-1 downto 0);
+    subtype ram_address     is natural range 0 to ram_depth-1;
     subtype address_integer is natural range 0 to ram_depth-1;
 
     type ram_array is array (natural range 0 to ram_depth-1) of ramtype;
@@ -64,9 +64,9 @@ package multi_port_ram_pkg is
 
         data    : in std_logic_vector);
 ------------------------------------------------------------------------
-end package multi_port_ram_pkg;
+end package generic_multi_port_ram_pkg;
 
-package body multi_port_ram_pkg is
+package body generic_multi_port_ram_pkg is
 
     procedure init_mp_ram_read
     (
@@ -153,4 +153,22 @@ package body multi_port_ram_pkg is
         self_write_in.write_requested <= '1';
     end write_data_to_ram;
 ------------------------------------------------------------------------
-end package body multi_port_ram_pkg;
+end package body generic_multi_port_ram_pkg;
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+library ieee;
+    use ieee.std_logic_1164.all;
+    use ieee.numeric_std.all;
+
+entity generic_multi_port_ram is
+    generic(package ram_port_pkg is new work.generic_multi_port_ram_pkg generic map(<>)
+            ;initial_values : ram_port_pkg.ram_array := (others => (others => '1')));
+    port (
+        clock         : in std_logic
+        ;ram_read_in  : in ram_port_pkg.ram_read_in_array
+        ;ram_read_out : out ram_port_pkg.ram_read_out_array
+        --------------------
+        ;ram_write  : in ram_port_pkg.ram_write_in_record
+    );
+    use ram_port_pkg.all;
+end entity generic_multi_port_ram;

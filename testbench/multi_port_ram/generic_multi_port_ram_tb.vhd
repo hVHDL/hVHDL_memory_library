@@ -1,5 +1,68 @@
 
+library ieee;
+    use ieee.std_logic_1164.all;
+    use ieee.numeric_std.all;
 
+entity multi_port_ram is
+    generic(package mp_ram_port_pkg is new work.generic_multi_port_ram_pkg generic map(<>)
+            ;initial_values : mp_ram_port_pkg.ram_array := (others => (others => '1')));
+    port (
+        clock         : in std_logic
+        ;ram_read_in  : in mp_ram_port_pkg.ram_read_in_array
+        ;ram_read_out : out mp_ram_port_pkg.ram_read_out_array
+        --------------------
+        ;ram_write_in  : in mp_ram_port_pkg.ram_write_in_record
+    );
+    use mp_ram_port_pkg.all;
+end entity multi_port_ram;
+---
+architecture rtl of multi_port_ram is
+
+    package ram_port_pkg is new work.ram_port_generic_pkg 
+        generic map( 
+                    g_ram_bit_width => ram_bit_width
+                    ,g_ram_depth_pow2 => 9);
+    use ram_port_pkg.all;
+
+    signal ram_a_in  : ram_in_array  (ram_read_in'range) ;
+    signal ram_a_out : ram_out_array (ram_read_in'range) ;
+    signal ram_b_in  : ram_in_array  (ram_read_in'range) ;
+    signal ram_b_out : ram_out_array (ram_read_in'range) ;
+
+begin
+
+    create_rams :
+    for i in ram_read_in'range generate
+        u_dpram : entity work.generic_dual_port_ram
+        generic map(ram_port_pkg)
+        port map(
+        clock ,
+        ram_a_in(i)     ,
+        ram_a_out(i)    ,
+        --------------
+        ram_b_in(i)  ,
+        open);
+
+        ram_a_in(i) <= (
+            address            => ram_read_in(i).address
+            ,read_is_requested => ram_read_in(i).read_requested
+            ,data              => (others => '0')
+            ,write_requested   => '0');
+
+        ram_read_out(i) <= (
+            data => ram_a_out(i).data
+            ,data_is_ready => ram_a_out(i).data_is_ready);
+
+        ram_b_in(i) <= (
+            address            => ram_write_in.address
+            ,read_is_requested => '0'
+            ,data              => ram_write_in.data
+            ,write_requested   => ram_write_in.write_requested);
+    end generate;
+
+end rtl;
+
+----
 LIBRARY ieee  ; 
     USE ieee.NUMERIC_STD.all  ; 
     USE ieee.std_logic_1164.all  ; 
@@ -70,7 +133,7 @@ begin
     begin
         if rising_edge(simulator_clock) then
             simulation_counter <= simulation_counter + 1;
-            init_mp_ram(ram_read_in,ram_write_in);
+            init_mp_ram(ram_read_in , ram_write_in);
 
         end if; -- rising_edge
     end process stimulus;	
@@ -81,8 +144,8 @@ begin
         generic map(ram_port_pkg)
         port map(
         simulator_clock ,
-        ram_a_in(i)   ,
-        ram_a_out(i)  ,
+        ram_a_in(i)     ,
+        ram_a_out(i)    ,
         --------------
         ram_b_in(i)  ,
         open);
