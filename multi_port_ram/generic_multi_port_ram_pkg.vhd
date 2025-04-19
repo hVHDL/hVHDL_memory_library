@@ -37,6 +37,7 @@ package generic_multi_port_ram_pkg is
 
     type ram_read_in_array  is array (natural range <>) of ram_read_in_record;
     type ram_read_out_array is array (natural range <>) of ram_read_out_record;
+    type ram_write_in_array is array (natural range <>) of ram_write_in_record;
 
     procedure init_mp_ram_read (
         signal self_read_in : out ram_read_in_record);
@@ -188,12 +189,11 @@ entity multi_port_ram is
     use mp_ram_port_pkg.all;
 end entity multi_port_ram;
 ---
-architecture rtl of multi_port_ram is
+architecture single_write of multi_port_ram is
 
     package ram_port_pkg is new work.ram_port_generic_pkg 
-        generic map( 
-                    g_ram_bit_width => ram_bit_width
-                    ,g_ram_depth_pow2 => 9);
+        generic map( g_ram_bit_width  => mp_ram_port_pkg.ram_bit_width
+                    ,g_ram_depth_pow2 => mp_ram_port_pkg.ram_depth_pow2);
     use ram_port_pkg.all;
 
     signal ram_a_in  : ram_in_array  (ram_read_in'range) ;
@@ -232,6 +232,4 @@ begin
             ,write_requested   => ram_write_in.write_requested);
     end generate;
 
-end rtl;
-
-----
+end single_write;
