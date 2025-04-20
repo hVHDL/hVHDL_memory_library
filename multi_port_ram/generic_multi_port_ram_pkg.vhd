@@ -39,6 +39,9 @@ package generic_multi_port_ram_pkg is
     type ram_read_out_array is array (natural range <>) of ram_read_out_record;
     type ram_write_in_array is array (natural range <>) of ram_write_in_record;
 
+    function "and" (left, right : ram_read_in_record) return ram_read_in_record;
+    function "and" (left, right : ram_write_in_record) return ram_write_in_record;
+
     procedure init_mp_ram_read (
         signal self_read_in : out ram_read_in_record);
 
@@ -48,6 +51,8 @@ package generic_multi_port_ram_pkg is
     procedure init_mp_ram (
         signal self_read_in : out ram_read_in_array;
         signal self_write_in : out ram_write_in_record);
+
+    procedure init_mp_write(signal self_write_in : out ram_write_in_record);
 
     procedure request_data_from_ram (
         signal self_read_in : out ram_read_in_record;
@@ -99,9 +104,17 @@ package body generic_multi_port_ram_pkg is
     ) is
     begin
         init_mp_ram_read(self_read_in);
-        self_write_in.write_requested  <= '0';
+        self_write_in.write_requested <= '0';
+        self_write_in.address         <= 0;
+        self_write_in.data            <= (others => '0');
     end init_mp_ram;
 ------------------------------
+    procedure init_mp_write(signal self_write_in : out ram_write_in_record) is
+    begin
+        self_write_in.write_requested <= '0';
+        self_write_in.address         <= 0;
+        self_write_in.data            <= (others => '0');
+    end init_mp_write;
 ------------------------------
     procedure request_data_from_ram
     (
@@ -112,7 +125,6 @@ package body generic_multi_port_ram_pkg is
         self_read_in.address <= address;
         self_read_in.read_requested <= '1';
     end request_data_from_ram;
-
 ------------------------------
     function ram_read_is_ready
     (
@@ -167,6 +179,33 @@ package body generic_multi_port_ram_pkg is
     begin
         return to_integer(unsigned(a));
     end slv_to_uint;
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+    function "and" (left, right : ram_read_in_record) return ram_read_in_record is
+        variable retval : ram_read_in_record;
+    begin
+        retval.address := to_integer(
+            to_unsigned(left.address, ram_depth_pow2)
+         or to_unsigned(right.address, ram_depth_pow2));
+
+        retval.read_requested := left.read_requested or right.read_requested;
+
+         return retval;
+     end function;
+------------------------------------------
+    function "and" (left, right : ram_write_in_record) return ram_write_in_record is
+        variable retval : ram_write_in_record;
+    begin
+        retval.address := to_integer(
+            to_unsigned(left.address, ram_depth_pow2)
+         or to_unsigned(right.address, ram_depth_pow2));
+
+        retval.data := left.data or right.data;
+
+        retval.write_requested := left.write_requested or right.write_requested;
+
+         return retval;
+     end function;
 ------------------------------------------------------------------------
 end package body generic_multi_port_ram_pkg;
 ------------------------------------------------------------------------
