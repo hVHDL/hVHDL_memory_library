@@ -40,6 +40,8 @@ package generic_multi_port_ram_pkg is
     type ram_write_in_array is array (natural range <>) of ram_write_in_record;
 
     function "and" (left, right : ram_read_in_record) return ram_read_in_record;
+    function "and" (left, right : ram_read_in_array) return ram_read_in_array;
+
     function "and" (left, right : ram_write_in_record) return ram_write_in_record;
 
     procedure init_mp_ram_read (
@@ -193,6 +195,17 @@ package body generic_multi_port_ram_pkg is
 
          return retval;
      end function;
+------------------------------------------
+    function "and" (left, right : ram_read_in_array) return ram_read_in_array is
+        variable retval : ram_read_in_array(left'range);
+    begin
+
+        for i in left'range loop
+            retval(i) := left(i) and right(i);
+        end loop;
+
+        return retval;
+    end function;
 ------------------------------------------
     function "and" (left, right : ram_write_in_record) return ram_write_in_record is
         variable retval : ram_write_in_record;
