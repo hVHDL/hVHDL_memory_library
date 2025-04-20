@@ -83,6 +83,7 @@ package body generic_multi_port_ram_pkg is
         signal self_read_in : out ram_read_in_record
     ) is
     begin
+        self_read_in.address <= 0;
         self_read_in.read_requested <= '0';
     end init_mp_ram_read;
 
