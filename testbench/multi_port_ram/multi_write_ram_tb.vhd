@@ -133,6 +133,16 @@ begin
             for i in ram_write_in'range loop
                 ram_write_in(i).write_requested <= '0';
             end loop;
+            CASE simulation_counter is
+                WHEN 1 =>
+                    request_data_from_ram(ram_read_in(0) , 6);
+                WHEN others => -- do nothing
+            end CASE;
+
+            if ram_read_is_ready(ram_read_out(0))
+            then
+                check(get_ram_data(ram_read_out(0)) = uint_to_slv(6));
+            end if;
 
         end if; -- rising_edge
     end process stimulus;	

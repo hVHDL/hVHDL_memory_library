@@ -201,12 +201,24 @@ architecture single_write of multi_port_ram is
     signal ram_b_in  : ram_in_array  (ram_read_in'range) ;
     signal ram_b_out : ram_out_array (ram_read_in'range) ;
 
+    function fill_ram(mpram_values : mp_ram_port_pkg.ram_array) return ram_port_pkg.ram_array is
+        variable retval : ram_port_pkg.ram_array;
+    begin
+        for i in mpram_values'range loop
+            retval(i) := mpram_values(i);
+        end loop;
+
+        return retval;
+    end fill_ram;
+
+    constant dp_ram_init_values : ram_port_pkg.ram_array := fill_ram(initial_values);
+
 begin
 
     create_rams :
     for i in ram_read_in'range generate
         u_dpram : entity work.generic_dual_port_ram
-        generic map(ram_port_pkg)
+        generic map(ram_port_pkg, dp_ram_init_values)
         port map(
         clock ,
         ram_a_in(i)     ,
