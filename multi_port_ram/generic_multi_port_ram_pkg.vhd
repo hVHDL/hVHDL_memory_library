@@ -73,6 +73,11 @@ package generic_multi_port_ram_pkg is
         address : in natural;
         data    : in std_logic_vector);
 
+    function write_requested(ram_write_in : ram_write_in_record) return boolean;
+    function write_requested(ram_write_in : ram_write_in_record; address : natural) return boolean;
+    function get_address(ram_write_in : ram_write_in_record) return natural;
+    function get_data(ram_write_in : ram_write_in_record) return std_logic_vector;
+
     function uint_to_slv(a : integer) return std_logic_vector;
     function slv_to_uint(a : std_logic_vector) return natural;
 ------------------------------------------------------------------------
@@ -172,6 +177,26 @@ package body generic_multi_port_ram_pkg is
         self_write_in.data    <= data;
         self_write_in.write_requested <= '1';
     end write_data_to_ram;
+------------------------------------------------------------------------
+    function write_requested(ram_write_in : ram_write_in_record) return boolean is
+    begin
+        return (ram_write_in.write_requested = '1');
+    end write_requested;
+------------------------------------------------------------------------
+    function write_requested(ram_write_in : ram_write_in_record; address : natural) return boolean is
+    begin
+        return (ram_write_in.write_requested = '1') and (ram_write_in.address = address);
+    end write_requested;
+------------------------------------------------------------------------
+    function get_address(ram_write_in : ram_write_in_record) return natural is
+    begin
+        return ram_write_in.address;
+    end get_address;
+
+    function get_data(ram_write_in : ram_write_in_record) return std_logic_vector is
+    begin
+        return ram_write_in.data;
+    end get_data;
 ------------------------------------------------------------------------
     function uint_to_slv(a : integer) return std_logic_vector is
     begin
