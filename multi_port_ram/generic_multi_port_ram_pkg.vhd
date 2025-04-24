@@ -44,7 +44,7 @@ package generic_multi_port_ram_pkg is
     constant init_read_in : ram_read_in_record := (0, '0');
     constant init_write_in : ram_write_in_record := (0, (others => '0'), '0');
 
-    function combine(a : ram_read_in_array_of_arrays) return ram_read_in_array;
+    function combine(a : ram_read_in_array_of_arrays; no_map_range_low : integer := -1; no_map_range_hi : integer := -1) return ram_read_in_array;
     function combine(a : ram_write_in_array) return ram_write_in_record;
 
     function "and" (left, right : ram_read_in_record) return ram_read_in_record;
@@ -264,11 +264,19 @@ package body generic_multi_port_ram_pkg is
          return retval;
      end combine;
 ------------------------------------------------------------------------
-     function combine(a : ram_read_in_array_of_arrays) return ram_read_in_array is
+     function combine(a : ram_read_in_array_of_arrays; no_map_range_low : integer := -1; no_map_range_hi : integer := -1) return ram_read_in_array is
          variable retval : ram_read_in_array(a(0)'range) := (others => init_read_in);
      begin
          for i in a'range loop
              retval := retval and a(i);
+         end loop;
+
+         for i in retval'range loop
+             if retval(i).address >= no_map_range_low
+                and retval(i).address <= no_map_range_hi
+             then
+                 retval(i).read_requested := '0';
+             end if;
          end loop;
 
          return retval;
