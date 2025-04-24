@@ -38,6 +38,14 @@ package generic_multi_port_ram_pkg is
     type ram_read_in_array  is array (natural range <>) of ram_read_in_record;
     type ram_read_out_array is array (natural range <>) of ram_read_out_record;
     type ram_write_in_array is array (natural range <>) of ram_write_in_record;
+    
+    type ram_read_in_array_of_arrays  is array (natural range <>) of ram_read_in_array;
+
+    constant init_read_in : ram_read_in_record := (0, '0');
+    constant init_write_in : ram_write_in_record := (0, (others => '0'), '0');
+
+    function combine(a : ram_read_in_array_of_arrays) return ram_read_in_array;
+    function combine(a : ram_write_in_array) return ram_write_in_record;
 
     function "and" (left, right : ram_read_in_record) return ram_read_in_record;
     function "and" (left, right : ram_read_in_array) return ram_read_in_array;
@@ -245,6 +253,27 @@ package body generic_multi_port_ram_pkg is
 
          return retval;
      end function;
+------------------------------------------------------------------------
+     function combine(a : ram_write_in_array) return ram_write_in_record is
+         variable retval : ram_write_in_record := init_write_in;
+     begin
+         for i in a'range loop
+             retval := retval and a(i);
+         end loop;
+
+         return retval;
+     end combine;
+------------------------------------------------------------------------
+     function combine(a : ram_read_in_array_of_arrays) return ram_read_in_array is
+         variable retval : ram_read_in_array(a(0)'range) := (others => init_read_in);
+     begin
+         for i in a'range loop
+             retval := retval and a(i);
+         end loop;
+
+         return retval;
+     end combine;
+
 ------------------------------------------------------------------------
 end package body generic_multi_port_ram_pkg;
 ------------------------------------------------------------------------
