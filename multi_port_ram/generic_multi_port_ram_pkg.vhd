@@ -40,6 +40,7 @@ package generic_multi_port_ram_pkg is
     type ram_write_in_array is array (natural range <>) of ram_write_in_record;
     
     type ram_read_in_array_of_arrays  is array (natural range <>) of ram_read_in_array;
+    type ram_read_out_array_of_arrays  is array (natural range <>) of ram_read_in_array;
 
     constant init_read_in : ram_read_in_record := (0, '0');
     constant init_write_in : ram_write_in_record := (0, (others => '0'), '0');
@@ -73,6 +74,9 @@ package generic_multi_port_ram_pkg is
 
     function get_ram_data ( self_read_out : ram_read_out_record)
         return std_logic_vector;
+
+    function read_requested(ram_read_in : ram_read_in_record) return boolean;
+    function read_requested(ram_read_in : ram_read_in_record; address : natural) return boolean;
 
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
@@ -172,6 +176,16 @@ package body generic_multi_port_ram_pkg is
     begin
         return to_integer(unsigned(self_read_out.data));
     end get_uint_ram_data;
+------------------------------------------------------------------------
+    function read_requested(ram_read_in : ram_read_in_record) return boolean is
+    begin
+        return (ram_read_in.read_requested = '1');
+    end read_requested;
+------------------------------------------------------------------------
+    function read_requested(ram_read_in : ram_read_in_record; address : natural) return boolean is
+    begin
+        return (ram_read_in.read_requested = '1') and (ram_read_in.address = address);
+    end read_requested;
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
     procedure write_data_to_ram
