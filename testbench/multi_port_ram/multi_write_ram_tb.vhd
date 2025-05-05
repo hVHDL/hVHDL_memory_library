@@ -42,7 +42,7 @@ begin
         open);
 
         ram_a_in(i) <= (
-            address            => ram_read_in(i).address
+            address            => to_integer(ram_read_in(i).address)
             ,read_is_requested => ram_read_in(i).read_requested
             ,data              => (others => '0')
             ,write_requested   => '0');
@@ -52,7 +52,7 @@ begin
             ,data_is_ready => ram_a_out(i).data_is_ready);
 
         ram_b_in(i) <= (
-            address            => ram_write_in(0).address
+            address            => to_integer(ram_write_in(0).address)
             ,read_is_requested => '0'
             ,data              => ram_write_in(0).data
             ,write_requested   => ram_write_in(0).write_requested);
@@ -161,7 +161,7 @@ begin
         open);
 
         ram_a_in(i) <= (
-            address            => ram_read_in(i).address
+            address            => to_integer(ram_read_in(i).address)
             ,read_is_requested => ram_read_in(i).read_requested
             ,data              => (others => '0')
             ,write_requested   => '0');
@@ -171,7 +171,7 @@ begin
             ,data_is_ready => ram_a_out(i).data_is_ready);
 
         ram_b_in(i) <= (
-            address            => ram_write_in(0).address
+            address            => to_integer(ram_write_in(0).address)
             ,read_is_requested => '0'
             ,data              => ram_write_in(0).data
             ,write_requested   => ram_write_in(0).write_requested);
