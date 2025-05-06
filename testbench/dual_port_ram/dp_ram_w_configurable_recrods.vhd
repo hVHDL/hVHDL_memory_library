@@ -5,7 +5,7 @@ library ieee;
 
 package dual_port_ram_pkg is
 
-    type ram_array is array (natural range 0 to ram_depth-1) of std_logic_vector;
+    type ram_array is array (natural range <>) of std_logic_vector;
 
     type ram_in_record is record
         address           : unsigned;
@@ -27,8 +27,6 @@ package dual_port_ram_pkg is
 
     procedure init_ram (
         signal self_in : inout ram_in_array);
-
-    function init_ram (self_in : ram_in_array) return ram_in_array;
 
     procedure request_data_from_ram (
         signal self_in : out ram_in_record;
@@ -72,17 +70,6 @@ package body dual_port_ram_pkg is
             self_in(i).read_is_requested <= '0';
             self_in(i).write_requested <= '0';
         end loop;
-    end init_ram;
-
-    function init_ram (self_in : ram_in_array) return ram_in_array
-    is
-        variable retval : ram_in_array(self_in'range) := self_in;
-    begin
-        for i in self_in'range loop
-            retval(i).read_is_requested := '0';
-            retval(i).write_requested := '0';
-        end loop;
-        return retval;
     end init_ram;
 
 ------------------------------
@@ -149,8 +136,10 @@ library ieee;
     use ieee.std_logic_1164.all;
     use ieee.numeric_std.all;
 
+    use work.dual_port_ram_pkg.all;
+
 entity dual_port_ram is
-    generic(g_ram_init_values : ram_array);
+    generic(g_ram_init_values : work.dual_port_ram_pkg.ram_array);
     port (
         clock     : in std_logic;
         ram_a_in  : in work.dual_port_ram_pkg.ram_in_record;
@@ -164,23 +153,25 @@ end entity dual_port_ram;
 -- move to separate source file once it works
 architecture sim of dual_port_ram is
 
+    subtype inst_ram_array is g_ram_init_values'subtype;
+
 ------------------------------------------------------------------------
-    impure function init_ram
-    (
-        ram_init_values : ram_array
-    )
-    return ram_array
-    is
-        variable retval : ram_array := (others => (others => '0'));
-    begin
-
-        for i in ram_init_values'range loop
-            retval(i) := ram_init_values(i);
-        end loop;
-
-        return retval;
-        
-    end init_ram;
+    -- impure function init_ram
+    -- (
+    --     ram_init_values : g_ram_init_values'subtype
+    -- )
+    -- return g_ram_init_values'subtype
+    -- is
+    --     variable retval : g_ram_init_values'subtype := (others => (others => '0'));
+    -- begin
+    --
+    --     for i in ram_init_values'range loop
+    --         retval(i) := ram_init_values(i);
+    --     end loop;
+    --
+    --     return retval;
+    --
+    -- end init_ram;
 
     type dp_ram is protected
 
@@ -192,7 +183,7 @@ architecture sim of dual_port_ram is
         impure function read_data(address : natural)
             return std_logic_vector;
     ------------------------------
-        impure function get_ram_array return ram_array;
+        impure function get_ram_array return inst_ram_array;
     ------------------------------
 
     end protected dp_ram;
@@ -202,10 +193,10 @@ architecture sim of dual_port_ram is
     type dp_ram is protected body
     ------------------------------
 
-        variable ram_contents : ram_array := init_ram(initial_values);
+        variable ram_contents : inst_ram_array /*:= init_ram(g_ram_init_values) */;
 
     ------------------------------
-        impure function get_ram_array return ram_array
+        impure function get_ram_array return inst_ram_array
         is
         begin
             return ram_contents;
@@ -243,7 +234,7 @@ architecture sim of dual_port_ram is
 
     signal read_b_pipeline : std_logic_vector(1 downto 0) := (others => '0');
     signal output_b_buffer : std_logic_vector(ram_b_out.data'range);
-    signal debug_ram_contents : ram_array := init_ram(initial_values);
+    -- signal debug_ram_contents : inst_ram_array := init_ram(initial_values);
 
 begin
     ram_a_out.data_is_ready <= read_a_pipeline(read_a_pipeline'left);
@@ -255,12 +246,12 @@ begin
             read_a_pipeline <= read_a_pipeline(read_a_pipeline'left-1 downto 0) & ram_a_in.read_is_requested;
             ram_a_out.data <= output_a_buffer;
             if (ram_a_in.read_is_requested = '1') or (ram_a_in.write_requested = '1') then
-                output_a_buffer <= dual_port_ram_array.read_data(ram_a_in.address);
+                output_a_buffer <= dual_port_ram_array.read_data(to_integer(ram_a_in.address));
                 if ram_a_in.write_requested = '1' then
-                    dual_port_ram_array.write_ram(ram_a_in.address, ram_a_in.data);
+                    dual_port_ram_array.write_ram(to_integer(ram_a_in.address), ram_a_in.data);
                 end if;
             end if;
-            debug_ram_contents <= dual_port_ram_array.get_ram_array;
+            -- debug_ram_contents <= dual_port_ram_array.get_ram_array;
         end if;
     end process;
 
@@ -270,9 +261,9 @@ begin
             read_b_pipeline <= read_b_pipeline(read_b_pipeline'left-1 downto 0) & ram_b_in.read_is_requested;
             ram_b_out.data <= output_b_buffer;
             if (ram_b_in.read_is_requested = '1') or (ram_b_in.write_requested = '1') then
-                output_b_buffer <= dual_port_ram_array.read_data(ram_b_in.address);
+                output_b_buffer <= dual_port_ram_array.read_data(to_integer(ram_b_in.address));
                 if ram_b_in.write_requested = '1' then
-                    dual_port_ram_array.write_ram(ram_b_in.address, ram_b_in.data);
+                    dual_port_ram_array.write_ram(to_integer(ram_b_in.address), ram_b_in.data);
                 end if;
             end if;
         end if;
