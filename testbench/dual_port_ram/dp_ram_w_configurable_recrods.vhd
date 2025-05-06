@@ -295,22 +295,22 @@ architecture vunit_simulation of configurable_dual_port_ram_tb is
     -- simulation specific signals ----
     use work.dual_port_ram_pkg.all;
 
-    constant init_values : ram_array(0 to 1023)(15 downto 0) := (others => (others => '0'));
+    constant init_values : ram_array(0 to 159)(15 downto 0) := (others => (others => '0'));
 
-    signal ram_a_in  : ram_in_record(address(0 to 9), data(15 downto 0));
-    signal ram_a_out : ram_out_record(data(15 downto 0));
+    signal ram_a_in  : ram_in_record(address(0 to 9), data(init_values(0)'range));
+    signal ram_a_out : ram_out_record(data(ram_a_in.data'range));
     --------------------
     signal ram_b_in  : ram_a_in'subtype;
     signal ram_b_out : ram_a_out'subtype;
 
-    signal read_counter : natural := 512;
+    signal read_counter  : natural := init_values'length;
     signal ready_counter : natural := 0;
 
     signal ram_was_read : boolean := false;
 
     signal test_output : std_logic_vector(ram_a_out.data'range) := (others => '0');
 
-    signal output_is_correct : boolean := false;
+    signal output_is_correct       : boolean := false;
     signal last_ram_index_was_read : boolean := false;
 
 begin
