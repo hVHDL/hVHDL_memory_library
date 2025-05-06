@@ -150,6 +150,7 @@ library ieee;
     use ieee.numeric_std.all;
 
 entity dual_port_ram is
+    generic(g_ram_init_values : ram_array);
     port (
         clock     : in std_logic;
         ram_a_in  : in work.dual_port_ram_pkg.ram_in_record;
@@ -160,6 +161,7 @@ entity dual_port_ram is
     );
 end entity dual_port_ram;
 
+-- move to separate source file once it works
 architecture sim of dual_port_ram is
 
 ------------------------------------------------------------------------

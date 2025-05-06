@@ -54,6 +54,9 @@ generic_fpga_ram.add_source_files(ROOT / "testbench/multi_port_ram/generic_multi
 
 generic_fpga_ram.add_source_files(ROOT / "testbench/multi_port_ram/multi_write_ram_tb.vhd")
 
+ram_wo_generics = VU.add_library("ram_wo_generics")
+ram_wo_generics.add_source_files(ROOT / "testbench\dual_port_ram/dp_ram_w_configurable_recrods.vhd")
+
 # VU.set_sim_option("nvc.sim_flags", ["-w"])
 
 VU.main()
