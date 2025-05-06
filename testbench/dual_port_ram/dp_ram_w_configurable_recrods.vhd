@@ -156,22 +156,22 @@ architecture sim of dual_port_ram is
     subtype inst_ram_array is g_ram_init_values'subtype;
 
 ------------------------------------------------------------------------
-    -- impure function init_ram
-    -- (
-    --     ram_init_values : g_ram_init_values'subtype
-    -- )
-    -- return g_ram_init_values'subtype
-    -- is
-    --     variable retval : g_ram_init_values'subtype := (others => (others => '0'));
-    -- begin
-    --
-    --     for i in ram_init_values'range loop
-    --         retval(i) := ram_init_values(i);
-    --     end loop;
-    --
-    --     return retval;
-    --
-    -- end init_ram;
+    impure function init_ram
+    (
+        ram_init_values : g_ram_init_values'subtype
+    )
+    return g_ram_init_values'subtype
+    is
+        variable retval : g_ram_init_values'subtype := (others => (others => '0'));
+    begin
+
+        for i in ram_init_values'range loop
+            retval(i) := ram_init_values(i);
+        end loop;
+
+        return retval;
+
+    end init_ram;
 
     type dp_ram is protected
 
@@ -193,7 +193,7 @@ architecture sim of dual_port_ram is
     type dp_ram is protected body
     ------------------------------
 
-        variable ram_contents : inst_ram_array /*:= init_ram(g_ram_init_values) */;
+        variable ram_contents : inst_ram_array := init_ram(g_ram_init_values);
 
     ------------------------------
         impure function get_ram_array return inst_ram_array
