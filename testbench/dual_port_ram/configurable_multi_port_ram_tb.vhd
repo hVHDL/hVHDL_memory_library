@@ -20,9 +20,11 @@ architecture vunit_simulation of generic_multi_port_ram_tb is
     -----------------------------------
     -- simulation specific signals ----
 
-    signal ram_read_in : ram_read_in_array(0 to 3);
-    signal ram_read_out : ram_read_out_array(ram_read_in'range);
-    signal ram_write_in : ram_write_in_record;
+    constant data_rangeref : std_logic_vector(15 downto 0);
+
+    signal ram_read_in : ram_read_in_array(0 to 3)(address(0 to 9),data(data_rangeref'range));
+    signal ram_read_out : ram_read_out_array(ram_read_in'range)(data(data_rangeref'range));
+    signal ram_write_in : ram_write_in_record( address(0 to 9), data(data_rangeref'range)));
 
     signal read_counter : natural := mp_ram_pkg.ram_array'length;
     signal ready_counter : natural := 0;
