@@ -70,13 +70,13 @@ package multi_port_ram_pkg is
         address : in natural;
         data    : in std_logic_vector);
 
-    -- function write_requested(ram_write_in : ram_write_in_record) return boolean;
-    -- function write_requested(ram_write_in : ram_write_in_record; address : natural) return boolean;
-    -- function get_address(ram_write_in : ram_write_in_record) return natural;
-    -- function get_data(ram_write_in : ram_write_in_record) return std_logic_vector;
+    function write_requested(ram_write_in : ram_write_in_record) return boolean;
+    function write_requested(ram_write_in : ram_write_in_record; address : natural) return boolean;
+    function get_address(ram_write_in : ram_write_in_record) return natural;
+    function get_data(ram_write_in : ram_write_in_record) return std_logic_vector;
     --
-    -- function uint_to_slv(a : integer; slv : std_logic_vector) return std_logic_vector is
-    -- function slv_to_uint(a : std_logic_vector) return natural;
+    function uint_to_slv(a : integer; slv : std_logic_vector) return std_logic_vector;
+    function slv_to_uint(a : std_logic_vector) return natural;
 ------------------------------------------------------------------------
 end package multi_port_ram_pkg;
 
@@ -256,8 +256,12 @@ package body multi_port_ram_pkg is
          return retval;
      end combine;
 ------------------------------------------------------------------------
-     -- function combine(a : ram_read_in_array_of_arrays; no_map_range_low : integer := 0; no_map_range_hi : integer := 0) return ram_read_in_array is
-     --     variable retval : ram_read_in_array(a(0)'range) := (others => init_read_in);
+     -- function combine(
+     --     a : ram_read_in_array_of_arrays
+     --     ; no_map_range_low : integer := 0
+     --     ; no_map_range_hi : integer := 0
+     --     ) return ram_read_in_array is
+     --     variable retval : ram_read_in_array(a(a'low)'range)(address(a(a'low).address'range) := (others => ((others => '0'),'0'));
      -- begin
      --     for i in a'range loop
      --         retval := retval and a(i);
@@ -293,7 +297,7 @@ entity multi_port_ram is
         ;ram_read_in  : in work.multi_port_ram_pkg.ram_read_in_array
         ;ram_read_out : out work.multi_port_ram_pkg.ram_read_out_array
         --------------------
-        ;ram_write_in  : in work.multi_port_ram_pkg.ram_write_in_record
+        ;ram_write_in : in work.multi_port_ram_pkg.ram_write_in_record
     );
 end entity multi_port_ram;
 ---
@@ -301,40 +305,44 @@ architecture single_write of multi_port_ram is
 
     -- constant ram_bit_width = ram_read_out(ram_read_out'left).data'length
 
-    signal ram_a_in  : ram_in_array  (ram_read_in'range)(address(0 to 9), data(initial_values(0)'range));
-    -- signal ram_a_out : ram_out_array (ram_read_in'range) ;
-    -- signal ram_b_in  : ram_in_array  (ram_read_in'range) ;
-    -- signal ram_b_out : ram_out_array (ram_read_in'range) ;
+    -- helper constant to be used for constraining address with 'range 
+    constant address_range_ref : unsigned(ram_read_in(ram_read_in'low).address'range) := (others => '0');
+
+    signal ram_a_in  : ram_in_array(ram_read_in'range)(address(address_range_ref'range), data(initial_values(0)'range));
+    signal ram_a_out : ram_out_array(ram_read_in'range)(data(initial_values(0)'range));
+    signal ram_b_in  : ram_in_array(ram_read_in'range)(address(address_range_ref'range), data(initial_values(0)'range));
+    signal dummy_ram_b_out : ram_out_array(ram_read_in'range)(data(initial_values(0)'range));
 
 begin
 
---     create_rams :
---     for i in ram_read_in'range generate
---         u_dpram : entity work.dual_port_ram
---         generic map(initial_values)
---         port map(
---         clock        
---         ,ram_a_in(i)  
---         ,ram_a_out(i) 
---         --------------
---         ,ram_b_in(i)
---         ,open);
---
---         ram_a_in(i) <= (
---             address            => ram_read_in(i).address
---             ,read_is_requested => ram_read_in(i).read_requested
---             ,data              => (others => '0')
---             ,write_requested   => '0');
---
---         ram_read_out(i) <= (
---             data => ram_a_out(i).data
---             ,data_is_ready => ram_a_out(i).data_is_ready);
---
---         ram_b_in(i) <= (
---             address            => ram_write_in.address
---             ,read_is_requested => '0'
---             ,data              => ram_write_in.data
---             ,write_requested   => ram_write_in.write_requested);
---     end generate;
---
+    create_rams :
+    for i in ram_read_in'range generate
+        u_dpram : entity work.dual_port_ram
+        generic map(initial_values)
+        port map(
+        clock        
+        ,ram_a_in(i)  
+        ,ram_a_out(i) 
+        --------------
+        ,ram_b_in(i)
+        
+        ,dummy_ram_b_out(i)); -- not connected to anything
+
+        ram_a_in(i) <= (
+            address            => ram_read_in(i).address
+            ,read_is_requested => ram_read_in(i).read_requested
+            ,data              => (others => '0')
+            ,write_requested   => '0');
+
+        ram_read_out(i) <= (
+            data => ram_a_out(i).data
+            ,data_is_ready => ram_a_out(i).data_is_ready);
+
+        ram_b_in(i) <= (
+            address            => ram_write_in.address
+            ,read_is_requested => '0'
+            ,data              => ram_write_in.data
+            ,write_requested   => ram_write_in.write_requested);
+    end generate;
+
 end single_write;
