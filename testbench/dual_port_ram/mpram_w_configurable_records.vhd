@@ -310,8 +310,8 @@ architecture single_write of multi_port_ram is
 
     signal ram_a_in  : ram_in_array(ram_read_in'range)(address(address_range_ref'range), data(initial_values(0)'range));
     signal ram_a_out : ram_out_array(ram_read_in'range)(data(initial_values(0)'range));
-    signal ram_b_in  : ram_in_array(ram_read_in'range)(address(address_range_ref'range), data(initial_values(0)'range));
-    signal dummy_ram_b_out : ram_out_array(ram_read_in'range)(data(initial_values(0)'range));
+    signal ram_b_in  : ram_a_in'subtype;
+    signal dummy_ram_b_out : ram_a_out'subtype;
 
 begin
 
