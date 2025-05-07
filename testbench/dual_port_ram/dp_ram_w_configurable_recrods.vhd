@@ -5,6 +5,7 @@ library ieee;
 
 package dual_port_ram_pkg is
 
+    constant read_pipeline_delay : natural := 2;
     type ram_array is array (natural range <>) of std_logic_vector;
 
     type ram_in_record is record

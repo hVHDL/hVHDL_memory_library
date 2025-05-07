@@ -1,5 +1,3 @@
-
-
 library ieee;
     use ieee.std_logic_1164.all;
     use ieee.numeric_std.all;
@@ -29,10 +27,10 @@ package multi_port_ram_pkg is
     type ram_read_in_array_of_arrays  is array (natural range <>) of ram_read_in_array;
     type ram_read_out_array_of_arrays is array (natural range <>) of ram_read_in_array;
 
-    constant init_read_in : ram_read_in_record := ((others => '0'), '0');
-    constant init_write_in : ram_write_in_record := ((others => '0'), (others => '0'), '0');
+    -- constant init_read_in : ram_read_in_record := ((others => '0'), '0');
+    -- constant init_write_in : ram_write_in_record := ((others => '0'), (others => '0'), '0');
 
-    function combine(a : ram_read_in_array_of_arrays; no_map_range_low : integer := 0; no_map_range_hi : integer := 0) return ram_read_in_array;
+    -- function combine(a : ram_read_in_array_of_arrays; no_map_range_low : integer := 0; no_map_range_hi : integer := 0) return ram_read_in_array;
     function combine(a : ram_write_in_array) return ram_write_in_record;
 
     function "and" (left, right : ram_read_in_record) return ram_read_in_record;
@@ -72,13 +70,13 @@ package multi_port_ram_pkg is
         address : in natural;
         data    : in std_logic_vector);
 
-    function write_requested(ram_write_in : ram_write_in_record) return boolean;
-    function write_requested(ram_write_in : ram_write_in_record; address : natural) return boolean;
-    function get_address(ram_write_in : ram_write_in_record) return natural;
-    function get_data(ram_write_in : ram_write_in_record) return std_logic_vector;
-
-    function uint_to_slv(a : integer) return std_logic_vector;
-    function slv_to_uint(a : std_logic_vector) return natural;
+    -- function write_requested(ram_write_in : ram_write_in_record) return boolean;
+    -- function write_requested(ram_write_in : ram_write_in_record; address : natural) return boolean;
+    -- function get_address(ram_write_in : ram_write_in_record) return natural;
+    -- function get_data(ram_write_in : ram_write_in_record) return std_logic_vector;
+    --
+    -- function uint_to_slv(a : integer; slv : std_logic_vector) return std_logic_vector is
+    -- function slv_to_uint(a : std_logic_vector) return natural;
 ------------------------------------------------------------------------
 end package multi_port_ram_pkg;
 
@@ -89,7 +87,7 @@ package body multi_port_ram_pkg is
         signal self_read_in : out ram_read_in_record
     ) is
     begin
-        self_read_in.address <= (others => '0');
+        self_read_in.address <= (self_read_in.address'range => '0');
         self_read_in.read_requested <= '0';
     end init_mp_ram_read;
 
@@ -99,7 +97,7 @@ package body multi_port_ram_pkg is
     ) is
     begin
         for i in self_read_in'range loop
-            self_read_in(i).address <= (others => '0');
+            self_read_in(i).address <= (self_read_in(self_read_in'low).address'range => '0');
             self_read_in(i).read_requested <= '0';
         end loop;
     end init_mp_ram_read;
@@ -112,15 +110,15 @@ package body multi_port_ram_pkg is
     begin
         init_mp_ram_read(self_read_in);
         self_write_in.write_requested <= '0';
-        self_write_in.address         <= (others => '0');
-        self_write_in.data            <= (others => '0');
+        self_write_in.address         <= (self_write_in.address'range => '0');
+        self_write_in.data            <= (self_write_in.data'range => '0');
     end init_mp_ram;
 ------------------------------
     procedure init_mp_write(signal self_write_in : out ram_write_in_record) is
     begin
         self_write_in.write_requested <= '0';
-        self_write_in.address         <= (others => '0');
-        self_write_in.data            <= (others => '0');
+        self_write_in.address         <= (self_write_in.address'range => '0');
+        self_write_in.data            <= (self_write_in.data'range => '0');
     end init_mp_write;
 ------------------------------
     procedure request_data_from_ram
@@ -207,9 +205,9 @@ package body multi_port_ram_pkg is
         return ram_write_in.data;
     end get_data;
 ------------------------------------------------------------------------
-    function uint_to_slv(a : integer) return std_logic_vector is
+    function uint_to_slv(a : integer; slv : std_logic_vector) return std_logic_vector is
     begin
-        return std_logic_vector(to_unsigned(a, ram_bit_width));
+        return std_logic_vector(to_unsigned(a, slv'length));
     end uint_to_slv;
 ------------------------------------------------------------------------
     function slv_to_uint(a : std_logic_vector) return natural is
@@ -219,7 +217,7 @@ package body multi_port_ram_pkg is
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
     function "and" (left, right : ram_read_in_record) return ram_read_in_record is
-        variable retval : ram_read_in_record;
+        variable retval : left'subtype;
     begin
         retval.address        := left.address or right.address;
         retval.read_requested := left.read_requested or right.read_requested;
@@ -228,7 +226,7 @@ package body multi_port_ram_pkg is
      end function;
 ------------------------------------------
     function "and" (left, right : ram_read_in_array) return ram_read_in_array is
-        variable retval : ram_read_in_array(left'range);
+        variable retval : ram_read_in_array(left'range)(address(left(left'low).address'range));
     begin
 
         for i in left'range loop
@@ -239,7 +237,7 @@ package body multi_port_ram_pkg is
     end function;
 ------------------------------------------
     function "and" (left, right : ram_write_in_record) return ram_write_in_record is
-        variable retval : ram_write_in_record;
+        variable retval : left'subtype;
     begin
         retval.address := left.address or right.address;
         retval.data := left.data or right.data;
@@ -249,7 +247,7 @@ package body multi_port_ram_pkg is
     end function;
 ------------------------------------------------------------------------
      function combine(a : ram_write_in_array) return ram_write_in_record is
-         variable retval : ram_write_in_record := init_write_in;
+         variable retval : ram_write_in_record(address(a(a'low).address'range), data(a(a'low).data'range)) := ((others => '0'), (others => '0'),'0');
      begin
          for i in a'range loop
              retval := retval and a(i);
@@ -258,23 +256,23 @@ package body multi_port_ram_pkg is
          return retval;
      end combine;
 ------------------------------------------------------------------------
-     function combine(a : ram_read_in_array_of_arrays; no_map_range_low : integer := 0; no_map_range_hi : integer := 0) return ram_read_in_array is
-         variable retval : ram_read_in_array(a(0)'range) := (others => init_read_in);
-     begin
-         for i in a'range loop
-             retval := retval and a(i);
-         end loop;
-
-         for i in retval'range loop
-             if retval(i).address >= no_map_range_low
-                and retval(i).address <= no_map_range_hi
-             then
-                 retval(i).read_requested := '0';
-             end if;
-         end loop;
-
-         return retval;
-     end combine;
+     -- function combine(a : ram_read_in_array_of_arrays; no_map_range_low : integer := 0; no_map_range_hi : integer := 0) return ram_read_in_array is
+     --     variable retval : ram_read_in_array(a(0)'range) := (others => init_read_in);
+     -- begin
+     --     for i in a'range loop
+     --         retval := retval and a(i);
+     --     end loop;
+     --
+     --     for i in retval'range loop
+     --         if retval(i).address >= no_map_range_low
+     --            and retval(i).address <= no_map_range_hi
+     --         then
+     --             retval(i).read_requested := '0';
+     --         end if;
+     --     end loop;
+     --
+     --     return retval;
+     -- end combine;
 
 ------------------------------------------------------------------------
 end package body multi_port_ram_pkg;
@@ -289,7 +287,7 @@ library ieee;
     use work.dual_port_ram_pkg.all;
 
 entity multi_port_ram is
-    generic(initial_values : dual_port_ram_pkg.ram_array);
+    generic(initial_values : work.dual_port_ram_pkg.ram_array);
     port (
         clock         : in std_logic
         ;ram_read_in  : in work.multi_port_ram_pkg.ram_read_in_array
@@ -303,40 +301,40 @@ architecture single_write of multi_port_ram is
 
     -- constant ram_bit_width = ram_read_out(ram_read_out'left).data'length
 
-    signal ram_a_in  : ram_in_array  (ram_read_in'range) ;
-    signal ram_a_out : ram_out_array (ram_read_in'range) ;
-    signal ram_b_in  : ram_in_array  (ram_read_in'range) ;
-    signal ram_b_out : ram_out_array (ram_read_in'range) ;
+    signal ram_a_in  : ram_in_array  (ram_read_in'range)(address(0 to 9), data(initial_values(0)'range));
+    -- signal ram_a_out : ram_out_array (ram_read_in'range) ;
+    -- signal ram_b_in  : ram_in_array  (ram_read_in'range) ;
+    -- signal ram_b_out : ram_out_array (ram_read_in'range) ;
 
 begin
 
-    create_rams :
-    for i in ram_read_in'range generate
-        u_dpram : entity work.dual_port_ram
-        generic map(initial_values)
-        port map(
-        clock ,
-        ram_a_in(i)     ,
-        ram_a_out(i)    ,
-        --------------
-        ram_b_in(i)  ,
-        open);
-
-        ram_a_in(i) <= (
-            address            => ram_read_in(i).address
-            ,read_is_requested => ram_read_in(i).read_requested
-            ,data              => (others => '0')
-            ,write_requested   => '0');
-
-        ram_read_out(i) <= (
-            data => ram_a_out(i).data
-            ,data_is_ready => ram_a_out(i).data_is_ready);
-
-        ram_b_in(i) <= (
-            address            => ram_write_in.address
-            ,read_is_requested => '0'
-            ,data              => ram_write_in.data
-            ,write_requested   => ram_write_in.write_requested);
-    end generate;
-
+--     create_rams :
+--     for i in ram_read_in'range generate
+--         u_dpram : entity work.dual_port_ram
+--         generic map(initial_values)
+--         port map(
+--         clock        
+--         ,ram_a_in(i)  
+--         ,ram_a_out(i) 
+--         --------------
+--         ,ram_b_in(i)
+--         ,open);
+--
+--         ram_a_in(i) <= (
+--             address            => ram_read_in(i).address
+--             ,read_is_requested => ram_read_in(i).read_requested
+--             ,data              => (others => '0')
+--             ,write_requested   => '0');
+--
+--         ram_read_out(i) <= (
+--             data => ram_a_out(i).data
+--             ,data_is_ready => ram_a_out(i).data_is_ready);
+--
+--         ram_b_in(i) <= (
+--             address            => ram_write_in.address
+--             ,read_is_requested => '0'
+--             ,data              => ram_write_in.data
+--             ,write_requested   => ram_write_in.write_requested);
+--     end generate;
+--
 end single_write;
