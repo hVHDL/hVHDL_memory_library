@@ -20,13 +20,16 @@ architecture vunit_simulation of generic_multi_port_ram_tb is
     -----------------------------------
     -- simulation specific signals ----
 
-    constant data_rangeref : std_logic_vector(15 downto 0);
+    use work.multi_port_ram_pkg.all;
 
-    signal ram_read_in : ram_read_in_array(0 to 3)(address(0 to 9),data(data_rangeref'range));
+    constant data_rangeref : std_logic_vector(15 downto 0) := (others => '0');
+    constant init_values : work.dual_port_ram_pkg.ram_array(0 to 2**10)(data_rangeref'range) := (others => (others => '0'));
+
+    signal ram_read_in : ram_read_in_array(0 to 4)(address(0 to 9));
     signal ram_read_out : ram_read_out_array(ram_read_in'range)(data(data_rangeref'range));
-    signal ram_write_in : ram_write_in_record( address(0 to 9), data(data_rangeref'range)));
+    signal ram_write_in : ram_write_in_record( address(0 to 9), data(data_rangeref'range));
 
-    signal read_counter : natural := mp_ram_pkg.ram_array'length;
+    signal read_counter : natural := 9;
     signal ready_counter : natural := 0;
 
     signal ram_was_read : boolean := false;
@@ -43,7 +46,7 @@ begin
     begin
         test_runner_setup(runner, runner_cfg);
         wait for simtime_in_clocks*clock_period;
-        -- check(ram_was_read);
+        check(ram_was_read);
         -- check(last_ram_index_was_read, "last index was not read");
         test_runner_cleanup(runner); -- Simulation ends here
         wait;
@@ -55,6 +58,7 @@ begin
 
     stimulus : process(simulator_clock)
         constant read_offset : natural := 57;
+        constant read_pipeline_delay : natural := 2;
     begin
         if rising_edge(simulator_clock) then
             simulation_counter <= simulation_counter + 1;
@@ -62,7 +66,7 @@ begin
 
             if simulation_counter < 51
             then
-                write_data_to_ram(ram_write_in, simulation_counter, uint_to_slv(simulation_counter));
+                write_data_to_ram(ram_write_in, simulation_counter, uint_to_slv(simulation_counter, data_rangeref));
             end if;
 
             if simulation_counter >= read_offset
@@ -75,18 +79,20 @@ begin
             end if;
 
             if ram_read_is_ready(ram_read_out(0)) then
-                check(get_ram_data(ram_read_out(0)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay));
-                check(get_ram_data(ram_read_out(1)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay));
-                check(get_ram_data(ram_read_out(2)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay));
-                check(get_ram_data(ram_read_out(3)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay));
+                check(get_ram_data(ram_read_out(0)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay, data_rangeref));
+                check(get_ram_data(ram_read_out(1)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay, data_rangeref));
+                check(get_ram_data(ram_read_out(2)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay, data_rangeref));
+                check(get_ram_data(ram_read_out(3)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay, data_rangeref));
             end if;
+
+            ram_was_read <= ram_was_read or ram_read_is_ready(ram_read_out(0));
 
 
         end if; -- rising_edge
     end process stimulus;	
 ------------------------------------------------------------------------
     u_mpram : entity work.multi_port_ram
-    generic map(mp_ram_pkg)
+    generic map(init_values)
     port map(
         clock => simulator_clock
         ,ram_read_in => ram_read_in
