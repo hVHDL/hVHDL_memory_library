@@ -23,11 +23,18 @@ architecture vunit_simulation of generic_multi_port_ram_tb is
     use work.multi_port_ram_pkg.all;
 
     constant data_rangeref : std_logic_vector(15 downto 0) := (others => '0');
+    constant address_rangeref : std_logic_vector(0 to 5) := (others => '0');
     constant init_values : work.dual_port_ram_pkg.ram_array(0 to 2**10)(data_rangeref'range) := (others => (others => '0'));
 
-    signal ram_read_in : ram_read_in_array(0 to 4)(address(0 to 9));
+    -- function testi return test_record is
+    --     constant ram_read_in  : ram_read_in_array(0 to 4)(address(address_rangeref'range));
+    --     constant ram_read_out : ram_read_out_array(ram_read_in'range)(data(data_rangeref'range));
+    --     constant ram_write_in : ram_write_in_record(address(address_rangeref'range), data(data_rangeref'range));
+    -- begin
+
+    signal ram_read_in  : ram_read_in_array(0 to 4)(address(address_rangeref'range));
     signal ram_read_out : ram_read_out_array(ram_read_in'range)(data(data_rangeref'range));
-    signal ram_write_in : ram_write_in_record( address(0 to 9), data(data_rangeref'range));
+    signal ram_write_in : ram_write_in_record(address(address_rangeref'range), data(data_rangeref'range));
 
     signal read_counter : natural := 9;
     signal ready_counter : natural := 0;
@@ -36,7 +43,7 @@ architecture vunit_simulation of generic_multi_port_ram_tb is
 
     signal test_output : std_logic_vector(ram_read_out(0).data'range) := (others => '0');
 
-    signal output_is_correct : boolean := false;
+    signal output_is_correct       : boolean := false;
     signal last_ram_index_was_read : boolean := false;
 
 begin
@@ -76,6 +83,7 @@ begin
                 request_data_from_ram(ram_read_in(1), simulation_counter-read_offset + 1);
                 request_data_from_ram(ram_read_in(2), simulation_counter-read_offset + 1);
                 request_data_from_ram(ram_read_in(3), simulation_counter-read_offset + 1);
+                request_data_from_ram(ram_read_in(4), simulation_counter-read_offset + 1);
             end if;
 
             if ram_read_is_ready(ram_read_out(0)) then
@@ -83,6 +91,7 @@ begin
                 check(get_ram_data(ram_read_out(1)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay, data_rangeref));
                 check(get_ram_data(ram_read_out(2)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay, data_rangeref));
                 check(get_ram_data(ram_read_out(3)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay, data_rangeref));
+                check(get_ram_data(ram_read_out(4)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay, data_rangeref));
             end if;
 
             ram_was_read <= ram_was_read or ram_read_is_ready(ram_read_out(0));
