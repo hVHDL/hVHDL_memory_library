@@ -22,40 +22,27 @@ architecture vunit_simulation of generic_multi_port_ram_tb is
 
     use work.multi_port_ram_pkg.all;
 
-    constant data_rangeref : std_logic_vector(15 downto 0) := (others => '0');
-    constant address_rangeref : std_logic_vector(0 to 5) := (others => '0');
-    constant init_values : work.dual_port_ram_pkg.ram_array(0 to 2**10)(data_rangeref'range) := (others => (others => '0'));
 
-    -- function testi return test_record is
-    --     constant ram_read_in  : ram_read_in_array(0 to 4)(address(address_rangeref'range));
-    --     constant ram_read_out : ram_read_out_array(ram_read_in'range)(data(data_rangeref'range));
-    --     constant ram_write_in : ram_write_in_record(address(address_rangeref'range), data(data_rangeref'range));
-    -- begin
-
-    constant number_of_read_ports : natural := 5;
-
-    type testrecord is record
+    type subtype_ref_record is record
         ram_read_in  : ram_read_in_array;
         ram_read_out : ram_read_out_array;
         ram_write_in : ram_write_in_record;
+        data : std_logic_vector;
     end record;
 
-    function create_ref_subtypes(readports : natural := 5 ; datawidth : natural := 16 ; addresswidth : natural := 10) return testrecord is
-        constant retval : testrecord :=( 
-            ram_read_in   => (0 to readports-1 => (address => (0 to addresswidth-1 => '0'), read_requested => '0'))
-            ,ram_read_out => (0 to readports-1 => (data    => (data_rangeref'range => '0'), data_is_ready  => '0'))
-            ,ram_write_in => (address => (0 to addresswidth-1 => '0'), data => (data_rangeref'range => '0'), write_requested => '0')
+    function create_ref_subtypes(readports : natural := 4 ; datawidth : natural := 16 ; addresswidth : natural := 10) return subtype_ref_record is
+        constant retval : subtype_ref_record :=( 
+            ram_read_in   => (0 to readports-1 => (address             => (0 to addresswidth-1  => '0'), read_requested  => '0'))
+            ,ram_read_out => (0 to readports-1 => (data                => (datawidth-1 downto 0 => '0'), data_is_ready   => '0'))
+            ,ram_write_in => (address          => (0 to addresswidth-1 => '0'), data            => (datawidth-1 downto 0 => '0'), write_requested => '0')
+            ,data => (datawidth-1 downto 0 => '0')
         );
     begin
         return retval;
     end create_ref_subtypes;
 
-    constant ref_subtype : testrecord := create_ref_subtypes;
-    -- ( 
-    --     ram_read_in   => (0 to number_of_read_ports-1 => (address => (address_rangeref'range => '0'), read_requested => '0'))
-    --     ,ram_read_out => (0 to number_of_read_ports-1 => (data    => (data_rangeref'range => '0'), data_is_ready  => '0'))
-    --     ,ram_write_in => (address => (address_rangeref'range => '0'), data => (data_rangeref'range => '0'), write_requested => '0')
-    -- );
+
+    constant ref_subtype : subtype_ref_record := create_ref_subtypes(readports => 5);
 
     -- signal ram_read_in  : ram_read_in_array(0 to 4)(address(address_rangeref'range));
     -- signal ram_read_out : ram_read_out_array(ram_read_in'range)(data(data_rangeref'range));
@@ -64,6 +51,7 @@ architecture vunit_simulation of generic_multi_port_ram_tb is
     signal ram_read_in  : ref_subtype.ram_read_in'subtype;
     signal ram_read_out : ref_subtype.ram_read_out'subtype;
     signal ram_write_in : ref_subtype.ram_write_in'subtype;
+    constant init_values : work.dual_port_ram_pkg.ram_array(0 to 2**10)(ref_subtype.data'range) := (others => (others => '0'));
 
     signal read_counter : natural := 9;
     signal ready_counter : natural := 0;
@@ -102,7 +90,7 @@ begin
 
             if simulation_counter < 51
             then
-                write_data_to_ram(ram_write_in, simulation_counter, uint_to_slv(simulation_counter, data_rangeref));
+                write_data_to_ram(ram_write_in, simulation_counter, uint_to_slv(simulation_counter, ref_subtype.data));
             end if;
 
             if simulation_counter >= read_offset
@@ -116,11 +104,11 @@ begin
             end if;
 
             if ram_read_is_ready(ram_read_out(0)) then
-                check(get_ram_data(ram_read_out(0)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay, data_rangeref));
-                check(get_ram_data(ram_read_out(1)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay, data_rangeref));
-                check(get_ram_data(ram_read_out(2)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay, data_rangeref));
-                check(get_ram_data(ram_read_out(3)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay, data_rangeref));
-                check(get_ram_data(ram_read_out(4)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay, data_rangeref));
+                check(get_ram_data(ram_read_out(0)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay, ref_subtype.data));
+                check(get_ram_data(ram_read_out(1)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay, ref_subtype.data));
+                check(get_ram_data(ram_read_out(2)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay, ref_subtype.data));
+                check(get_ram_data(ram_read_out(3)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay, ref_subtype.data));
+                check(get_ram_data(ram_read_out(4)) = uint_to_slv(simulation_counter-read_offset-read_pipeline_delay, ref_subtype.data));
             end if;
 
             ram_was_read <= ram_was_read or ram_read_is_ready(ram_read_out(0));
