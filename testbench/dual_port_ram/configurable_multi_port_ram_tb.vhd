@@ -32,9 +32,38 @@ architecture vunit_simulation of generic_multi_port_ram_tb is
     --     constant ram_write_in : ram_write_in_record(address(address_rangeref'range), data(data_rangeref'range));
     -- begin
 
-    signal ram_read_in  : ram_read_in_array(0 to 4)(address(address_rangeref'range));
-    signal ram_read_out : ram_read_out_array(ram_read_in'range)(data(data_rangeref'range));
-    signal ram_write_in : ram_write_in_record(address(address_rangeref'range), data(data_rangeref'range));
+    constant number_of_read_ports : natural := 5;
+
+    type testrecord is record
+        ram_read_in  : ram_read_in_array;
+        ram_read_out : ram_read_out_array;
+        ram_write_in : ram_write_in_record;
+    end record;
+
+    function create_ref_subtypes(readports : natural := 5 ; datawidth : natural := 16 ; addresswidth : natural := 10) return testrecord is
+        constant retval : testrecord :=( 
+            ram_read_in   => (0 to readports-1 => (address => (0 to addresswidth-1 => '0'), read_requested => '0'))
+            ,ram_read_out => (0 to readports-1 => (data    => (data_rangeref'range => '0'), data_is_ready  => '0'))
+            ,ram_write_in => (address => (0 to addresswidth-1 => '0'), data => (data_rangeref'range => '0'), write_requested => '0')
+        );
+    begin
+        return retval;
+    end create_ref_subtypes;
+
+    constant ref_subtype : testrecord := create_ref_subtypes;
+    -- ( 
+    --     ram_read_in   => (0 to number_of_read_ports-1 => (address => (address_rangeref'range => '0'), read_requested => '0'))
+    --     ,ram_read_out => (0 to number_of_read_ports-1 => (data    => (data_rangeref'range => '0'), data_is_ready  => '0'))
+    --     ,ram_write_in => (address => (address_rangeref'range => '0'), data => (data_rangeref'range => '0'), write_requested => '0')
+    -- );
+
+    -- signal ram_read_in  : ram_read_in_array(0 to 4)(address(address_rangeref'range));
+    -- signal ram_read_out : ram_read_out_array(ram_read_in'range)(data(data_rangeref'range));
+    -- signal ram_write_in : ram_write_in_record(address(address_rangeref'range), data(data_rangeref'range));
+
+    signal ram_read_in  : ref_subtype.ram_read_in'subtype;
+    signal ram_read_out : ref_subtype.ram_read_out'subtype;
+    signal ram_write_in : ref_subtype.ram_write_in'subtype;
 
     signal read_counter : natural := 9;
     signal ready_counter : natural := 0;
