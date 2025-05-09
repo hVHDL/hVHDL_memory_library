@@ -27,6 +27,17 @@ package multi_port_ram_pkg is
     type ram_read_in_array_of_arrays  is array (natural range <>) of ram_read_in_array;
     type ram_read_out_array_of_arrays is array (natural range <>) of ram_read_in_array;
 
+    ----- used for instantiating subtypes -----
+    type subtype_ref_record is record
+        ram_read_in  : ram_read_in_array;
+        ram_read_out : ram_read_out_array;
+        ram_write_in : ram_write_in_record;
+        data         : std_logic_vector;
+    end record;
+
+    function create_ref_subtypes(readports : natural := 4 ; datawidth : natural := 16 ; addresswidth : natural := 10) return subtype_ref_record;
+    -------------------------------------------
+
     -- constant init_read_in : ram_read_in_record := ((others => '0'), '0');
     -- constant init_write_in : ram_write_in_record := ((others => '0'), (others => '0'), '0');
 
@@ -81,6 +92,19 @@ package multi_port_ram_pkg is
 end package multi_port_ram_pkg;
 
 package body multi_port_ram_pkg is
+
+-----------------------------------
+    function create_ref_subtypes(readports : natural := 4 ; datawidth : natural := 16 ; addresswidth : natural := 10) return subtype_ref_record is
+        constant retval : subtype_ref_record :=( 
+            ram_read_in   => (0 to readports-1 => (address             => (0 to addresswidth-1  => '0'), read_requested  => '0'))
+            ,ram_read_out => (0 to readports-1 => (data                => (datawidth-1 downto 0 => '0'), data_is_ready   => '0'))
+            ,ram_write_in => (address          => (0 to addresswidth-1 => '0'), data            => (datawidth-1 downto 0 => '0'), write_requested => '0')
+            ,data => (datawidth-1 downto 0 => '0')
+        );
+    begin
+        return retval;
+    end create_ref_subtypes;
+-----------------------------------
 
     procedure init_mp_ram_read
     (

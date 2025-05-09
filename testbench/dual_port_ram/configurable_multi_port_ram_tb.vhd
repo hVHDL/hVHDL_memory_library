@@ -41,7 +41,6 @@ architecture vunit_simulation of generic_multi_port_ram_tb is
         return retval;
     end create_ref_subtypes;
 
-
     constant ref_subtype : subtype_ref_record := create_ref_subtypes(readports => 5);
 
     -- signal ram_read_in  : ram_read_in_array(0 to 4)(address(address_rangeref'range));
