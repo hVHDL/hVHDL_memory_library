@@ -41,7 +41,13 @@ package multi_port_ram_pkg is
     -- constant init_read_in : ram_read_in_record := ((others => '0'), '0');
     -- constant init_write_in : ram_write_in_record := ((others => '0'), (others => '0'), '0');
 
-    -- function combine(a : ram_read_in_array_of_arrays; no_map_range_low : integer := 0; no_map_range_hi : integer := 0) return ram_read_in_array;
+     function combine(
+         a : ram_read_in_array_of_arrays
+         ; address_range_ref : std_logic_vector
+         ; no_map_range_low : integer := 0
+         ; no_map_range_hi : integer := 0
+         ) return ram_read_in_array;
+
     function combine(a : ram_write_in_array) return ram_write_in_record;
 
     function "and" (left, right : ram_read_in_record) return ram_read_in_record;
@@ -280,34 +286,34 @@ package body multi_port_ram_pkg is
          return retval;
      end combine;
 ------------------------------------------------------------------------
-     -- function combine(
-     --     a : ram_read_in_array_of_arrays
-     --     ; no_map_range_low : integer := 0
-     --     ; no_map_range_hi : integer := 0
-     --     ) return ram_read_in_array is
-     --
-     --     constant lowest_array_index  : natural := a'low;
-     --     constant lowest_record_index : natural := a(lowest_array_index);
-     --
-     --     constant bing : ram_read_in_record(a(a'low)
-     --
-     --     variable retval : ram_read_in_array(a(a'low)'range)(address(a(a'low).address'range) := (others => ((others => '0'),'0'));
-     --
-     -- begin
-     --     for i in a'range loop
-     --         retval := retval and a(i);
-     --     end loop;
-     --
-     --     for i in retval'range loop
-     --         if retval(i).address >= no_map_range_low
-     --            and retval(i).address <= no_map_range_hi
-     --         then
-     --             retval(i).read_requested := '0';
-     --         end if;
-     --     end loop;
-     --
-     --     return retval;
-     -- end combine;
+     function combine(
+         a : ram_read_in_array_of_arrays
+         ; address_range_ref : std_logic_vector
+         ; no_map_range_low : integer := 0
+         ; no_map_range_hi : integer := 0
+         ) return ram_read_in_array is
+
+         variable retval : ram_read_in_array(
+                            a(a'low)'range
+                        )(
+                            address(address_range_ref'range)
+                        ) := (others => ((others => '0'),'0'));
+
+     begin
+         for i in a'range loop
+             retval := retval and a(i);
+         end loop;
+
+         for i in retval'range loop
+             if retval(i).address >= no_map_range_low
+                and retval(i).address <= no_map_range_hi
+             then
+                 retval(i).read_requested := '0';
+             end if;
+         end loop;
+
+         return retval;
+     end combine;
 
 ------------------------------------------------------------------------
 end package body multi_port_ram_pkg;

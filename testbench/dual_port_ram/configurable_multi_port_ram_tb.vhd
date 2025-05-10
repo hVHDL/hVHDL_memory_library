@@ -45,7 +45,21 @@ architecture vunit_simulation of generic_multi_port_ram_tb is
     signal last_ram_index_was_read : boolean := false;
 
     signal testi : ram_read_in_array_of_arrays(0 to 5)(0 to 4)(address(15 downto 0));
-    signal toinen_testi : ram_read_in_array_of_arrays(testi'range)(testi(testi'low)'range)(address(15 downto 0));
+
+    signal toinen_testi : ram_read_in_array_of_arrays(
+        testi'range
+    )(
+        testi(testi'low)'range
+    )(
+        address(15 downto 0)
+    );
+
+    signal kolmas_testi : ram_read_in_array(
+        testi(testi'low)'range
+    )(
+        address(15 downto 0)
+    );
+    
 
 begin
 
