@@ -32,7 +32,7 @@ package multi_port_ram_pkg is
         ram_read_in  : ram_read_in_array;
         ram_read_out : ram_read_out_array;
         ram_write_in : ram_write_in_record;
-        address      : std_logic_vector;
+        address_high      : natural;
         data         : std_logic_vector;
     end record;
 
@@ -127,7 +127,7 @@ package body multi_port_ram_pkg is
                 write_requested  => '0'
             )
 
-            ,address => (0 to addresswidth - 1 => '0')
+            ,address_high => 2**(addresswidth) - 1
             ,data    => (datawidth - 1 downto 0    => '0')
         );
     begin
