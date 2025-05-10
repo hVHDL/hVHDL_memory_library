@@ -127,7 +127,7 @@ package body multi_port_ram_pkg is
                 write_requested  => '0'
             )
 
-            ,address => (addresswidth - 1 downto 0 => '0')
+            ,address => (0 to addresswidth - 1 => '0')
             ,data    => (datawidth - 1 downto 0    => '0')
         );
     begin
