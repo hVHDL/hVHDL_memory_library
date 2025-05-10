@@ -32,6 +32,7 @@ package multi_port_ram_pkg is
         ram_read_in  : ram_read_in_array;
         ram_read_out : ram_read_out_array;
         ram_write_in : ram_write_in_record;
+        address      : std_logic_vector;
         data         : std_logic_vector;
     end record;
 
@@ -111,22 +112,23 @@ package body multi_port_ram_pkg is
                     address        => (0 to addresswidth - 1 => '0'),
                     read_requested => '0'
                 )
-            ),
+            )
 
-            ram_read_out => (
+            ,ram_read_out => (
                 0 to readports - 1 => (
                     data          => (datawidth - 1 downto 0 => '0'),
                     data_is_ready => '0'
                 )
-            ),
+            )
 
-            ram_write_in => (
+            ,ram_write_in => (
                 address          => (0 to addresswidth - 1 => '0'),
                 data             => (datawidth - 1 downto 0 => '0'),
                 write_requested  => '0'
-            ),
+            )
 
-            data => (datawidth - 1 downto 0 => '0')
+            ,address => (addresswidth - 1 downto 0 => '0')
+            ,data    => (datawidth - 1 downto 0    => '0')
         );
     begin
         return retval;
