@@ -32,7 +32,7 @@ architecture vunit_simulation of generic_multi_port_ram_tb is
     signal ram_read_in  : ref_subtype.ram_read_in'subtype;
     signal ram_read_out : ref_subtype.ram_read_out'subtype;
     signal ram_write_in : ref_subtype.ram_write_in'subtype;
-    constant init_values : work.dual_port_ram_pkg.ram_array(0 to 2**10)(ref_subtype.data'range) := (others => (others => '0'));
+    constant init_values : work.dual_port_ram_pkg.ram_array(0 to ref_subtype.address_high)(ref_subtype.data'range) := (others => (others => '0'));
 
     signal read_counter : natural := 9;
     signal ready_counter : natural := 0;
