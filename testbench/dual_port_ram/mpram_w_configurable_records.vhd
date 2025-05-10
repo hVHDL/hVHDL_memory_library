@@ -285,7 +285,14 @@ package body multi_port_ram_pkg is
      --     ; no_map_range_low : integer := 0
      --     ; no_map_range_hi : integer := 0
      --     ) return ram_read_in_array is
+     --
+     --     constant lowest_array_index  : natural := a'low;
+     --     constant lowest_record_index : natural := a(lowest_array_index);
+     --
+     --     constant bing : ram_read_in_record(a(a'low)
+     --
      --     variable retval : ram_read_in_array(a(a'low)'range)(address(a(a'low).address'range) := (others => ((others => '0'),'0'));
+     --
      -- begin
      --     for i in a'range loop
      --         retval := retval and a(i);

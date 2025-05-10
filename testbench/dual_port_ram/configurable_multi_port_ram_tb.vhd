@@ -23,24 +23,6 @@ architecture vunit_simulation of generic_multi_port_ram_tb is
     use work.multi_port_ram_pkg.all;
 
 
-    type subtype_ref_record is record
-        ram_read_in  : ram_read_in_array;
-        ram_read_out : ram_read_out_array;
-        ram_write_in : ram_write_in_record;
-        data : std_logic_vector;
-    end record;
-
-    function create_ref_subtypes(readports : natural := 4 ; datawidth : natural := 16 ; addresswidth : natural := 10) return subtype_ref_record is
-        constant retval : subtype_ref_record :=( 
-            ram_read_in   => (0 to readports-1 => (address             => (0 to addresswidth-1  => '0'), read_requested  => '0'))
-            ,ram_read_out => (0 to readports-1 => (data                => (datawidth-1 downto 0 => '0'), data_is_ready   => '0'))
-            ,ram_write_in => (address          => (0 to addresswidth-1 => '0'), data            => (datawidth-1 downto 0 => '0'), write_requested => '0')
-            ,data => (datawidth-1 downto 0 => '0')
-        );
-    begin
-        return retval;
-    end create_ref_subtypes;
-
     constant ref_subtype : subtype_ref_record := create_ref_subtypes(readports => 5);
 
     -- signal ram_read_in  : ram_read_in_array(0 to 4)(address(address_rangeref'range));
@@ -61,6 +43,9 @@ architecture vunit_simulation of generic_multi_port_ram_tb is
 
     signal output_is_correct       : boolean := false;
     signal last_ram_index_was_read : boolean := false;
+
+    signal testi : ram_read_in_array_of_arrays(0 to 5)(0 to 4)(address(15 downto 0));
+    signal toinen_testi : ram_read_in_array_of_arrays(testi'range)(testi(testi'low)'range)(address(15 downto 0));
 
 begin
 
