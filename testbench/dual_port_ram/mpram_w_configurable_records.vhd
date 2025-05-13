@@ -32,8 +32,9 @@ package multi_port_ram_pkg is
         ram_read_in  : ram_read_in_array;
         ram_read_out : ram_read_out_array;
         ram_write_in : ram_write_in_record;
-        address_high      : natural;
+        address_high : natural;
         data         : std_logic_vector;
+        address      : std_logic_vector;
     end record;
 
     function create_ref_subtypes(readports : natural := 4 ; datawidth : natural := 16 ; addresswidth : natural := 10) return subtype_ref_record;
@@ -129,6 +130,7 @@ package body multi_port_ram_pkg is
 
             ,address_high => 2**(addresswidth) - 1
             ,data    => (datawidth - 1 downto 0    => '0')
+            ,address => (addresswidth-1 downto 0 => '0')
         );
     begin
         return retval;
