@@ -23,6 +23,17 @@ package dual_port_ram_pkg is
     type ram_in_array is array (natural range <>) of ram_in_record;
     type ram_out_array is array (natural range <>) of ram_out_record;
 
+
+    type dpram_ref_record is record
+        ram_in       : ram_in_record;
+        ram_out      : ram_out_record;
+        address_high : natural;
+        data         : std_logic_vector;
+        address      : std_logic_vector;
+    end record;
+
+    function create_ref_subtypes(datawidth : natural; addresswidth : natural) return dpram_ref_record;
+
     procedure init_ram (
         signal self_in : out ram_in_record);
 
@@ -52,6 +63,27 @@ end package dual_port_ram_pkg;
 
 package body dual_port_ram_pkg is
 
+------------------------------------------------------------------------
+    function create_ref_subtypes(datawidth : natural; addresswidth : natural) return dpram_ref_record is
+        constant retval : dpram_ref_record :=
+        (
+            ram_in => (
+                address            => (0 to addresswidth-1  => '0')
+                ,read_is_requested => '0'
+                ,data              => (datawidth-1 downto 0 => '0')
+                ,write_requested   => '0')
+
+            ,ram_out =>(
+                data           => (datawidth-1 downto 0 => '0')
+                ,data_is_ready => '0')
+            
+            ,address_high => 2**addresswidth - 1
+            ,data    => (datawidth-1 downto 0    => '0')
+            ,address => (addresswidth-1 downto 0 => '0')
+        );
+    begin
+        return retval;
+    end create_ref_subtypes;
 ------------------------------------------------------------------------
     procedure init_ram
     (
@@ -140,7 +172,13 @@ library ieee;
     use work.dual_port_ram_pkg.all;
 
 entity dual_port_ram is
-    generic(g_ram_init_values : work.dual_port_ram_pkg.ram_array);
+    generic(
+       g_dpram_subtype : dpram_ref_record
+       ; g_ram_init_values : work.dual_port_ram_pkg.ram_array
+           (0 to g_dpram_subtype.address_high
+           )(
+           g_dpram_subtype.data'range) := (others => (others => '0')));
+
     port (
         clock     : in std_logic;
         ram_a_in  : in work.dual_port_ram_pkg.ram_in_record;

@@ -369,6 +369,7 @@ architecture single_write of multi_port_ram is
 
     -- helper constant to be used for constraining address with 'range 
     constant address_range_ref : unsigned(ram_read_in(ram_read_in'low).address'range) := (others => '0');
+    constant dp_ram_subtype : dpram_ref_record := create_ref_subtypes(datawidth => ram_read_out(ram_read_out'low).data'length, addresswidth => ram_read_in(ram_read_in'low).address'length);
 
     signal ram_a_in  : ram_in_array(ram_read_in'range)(address(address_range_ref'range), data(initial_values(0)'range));
     signal ram_a_out : ram_out_array(ram_read_in'range)(data(initial_values(0)'range));
@@ -380,7 +381,7 @@ begin
     create_rams :
     for i in ram_read_in'range generate
         u_dpram : entity work.dual_port_ram
-        generic map(initial_values)
+        generic map(dp_ram_subtype, initial_values)
         port map(
         clock        
         ,ram_a_in(i)  
