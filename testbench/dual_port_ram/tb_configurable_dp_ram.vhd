@@ -23,9 +23,12 @@ architecture vunit_simulation of configurable_dual_port_ram_tb is
     use work.dual_port_ram_pkg.all;
 
     constant init_values : ram_array(0 to 159)(15 downto 0) := (others => (others => '0'));
+    constant dp_ram_subtype : dpram_ref_record := create_ref_subtypes(
+        datawidth      => init_values(0)'length
+        , addresswidth => 10);
 
-    signal ram_a_in  : ram_in_record(address(0 to 9), data(init_values(0)'range));
-    signal ram_a_out : ram_out_record(data(ram_a_in.data'range));
+    signal ram_a_in  : dp_ram_subtype.ram_in'subtype;
+    signal ram_a_out : dp_ram_subtype.ram_out'subtype;
     --------------------
     signal ram_b_in  : ram_a_in'subtype;
     signal ram_b_out : ram_a_out'subtype;
@@ -94,7 +97,7 @@ begin
     end process stimulus;	
 ------------------------------------------------------------------------
     u_dpram : entity work.dual_port_ram
-    generic map(init_values)
+    generic map(dp_ram_subtype, init_values)
     port map(
     simulator_clock ,
     ram_a_in   ,

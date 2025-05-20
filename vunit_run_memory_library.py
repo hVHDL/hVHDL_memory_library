@@ -55,9 +55,9 @@ generic_fpga_ram.add_source_files(ROOT / "testbench/multi_port_ram/generic_multi
 generic_fpga_ram.add_source_files(ROOT / "testbench/multi_port_ram/multi_write_ram_tb.vhd")
 
 ram_wo_generic_packages = VU.add_library("ram_wo_generic_packages")
-ram_wo_generic_packages.add_source_files(ROOT / "testbench/dual_port_ram/dp_ram_w_configurable_recrods.vhd")
-ram_wo_generic_packages.add_source_files(ROOT / "testbench/dual_port_ram/arch_sim_dp_ram_w_configurable_records.vhd")
-ram_wo_generic_packages.add_source_files(ROOT / "testbench/dual_port_ram/mpram_w_configurable_records.vhd")
+ram_wo_generic_packages.add_source_files(ROOT / "vhdl2008/dp_ram_w_configurable_recrods.vhd")
+ram_wo_generic_packages.add_source_files(ROOT / "vhdl2008/arch_sim_dp_ram_w_configurable_records.vhd")
+ram_wo_generic_packages.add_source_files(ROOT / "vhdl2008/mpram_w_configurable_records.vhd")
 
 ram_wo_generic_packages.add_source_files(ROOT / "testbench/dual_port_ram/tb_configurable_dp_ram.vhd")
 ram_wo_generic_packages.add_source_files(ROOT / "testbench/dual_port_ram/configurable_multi_port_ram_tb.vhd")
