@@ -62,6 +62,8 @@ ram_wo_generic_packages.add_source_files(ROOT / "vhdl2008/mpram_w_configurable_r
 ram_wo_generic_packages.add_source_files(ROOT / "testbench/dual_port_ram/tb_configurable_dp_ram.vhd")
 ram_wo_generic_packages.add_source_files(ROOT / "testbench/dual_port_ram/configurable_multi_port_ram_tb.vhd")
 
+ram_wo_generic_packages.add_source_files(ROOT / "testbench/multi_port_ram/multi_pumped_mpram_tb.vhd")
+
 # VU.set_sim_option("nvc.sim_flags", ["-w"])
 
 VU.main()
