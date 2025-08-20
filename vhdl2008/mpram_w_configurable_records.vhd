@@ -43,6 +43,9 @@ package multi_port_ram_pkg is
     -- constant init_read_in : ram_read_in_record := ((others => '0'), '0');
     -- constant init_write_in : ram_write_in_record := ((others => '0'), (others => '0'), '0');
 
+    function init_write_in(addresswidth : natural; datawidth : natural) 
+        return ram_write_in_record;
+
      function combine(
          a : ram_read_in_array_of_arrays
          ; address_range_ref : std_logic_vector
@@ -91,6 +94,7 @@ package multi_port_ram_pkg is
 
     function write_requested(ram_write_in : ram_write_in_record) return boolean;
     function write_requested(ram_write_in : ram_write_in_record; address : natural) return boolean;
+    function write_requested(ram_write_in : ram_write_in_array) return boolean;
     function get_address(ram_write_in : ram_write_in_record) return natural;
     function get_data(ram_write_in : ram_write_in_record) return std_logic_vector;
     --
@@ -244,6 +248,15 @@ package body multi_port_ram_pkg is
     begin
         return (ram_write_in.write_requested = '1');
     end write_requested;
+--
+    function write_requested(ram_write_in : ram_write_in_array) return boolean is
+        variable retval : std_logic := '0';
+    begin
+        for i in ram_write_in'range loop
+            retval := retval or ram_write_in(i).write_requested;
+        end loop;
+        return (retval = '1');
+    end write_requested;
 ------------------------------------------------------------------------
     function write_requested(ram_write_in : ram_write_in_record; address : natural) return boolean is
     begin
@@ -339,6 +352,21 @@ package body multi_port_ram_pkg is
 
          return retval;
      end combine;
+
+
+------------------------------------------------------------------------
+    function init_write_in(addresswidth : natural; datawidth : natural) return ram_write_in_record
+    is
+        constant retval : ram_write_in_record := (
+                address          => (0 to addresswidth - 1 => '0'),
+                data             => (datawidth - 1 downto 0 => '0'),
+                write_requested  => '0'
+            );
+
+    begin
+        return retval;
+    end init_write_in;
+------------------------------------------------------------------------
 
 ------------------------------------------------------------------------
 end package body multi_port_ram_pkg;

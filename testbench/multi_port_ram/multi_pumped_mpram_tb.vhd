@@ -8,7 +8,7 @@ library ieee;
 entity multi_pumped_mpram is
     generic(clock_mult : positive; initial_values : work.dual_port_ram_pkg.ram_array);
     port (
-        logic_clock   : in std_logic
+        logic_clock   : in std_logic -- might not be needed
         ;ram_clock    : in std_logic
         ;ram_read_in  : in work.multi_port_ram_pkg.ram_read_in_array
         ;ram_read_out : out work.multi_port_ram_pkg.ram_read_out_array
@@ -40,9 +40,42 @@ architecture rtl of multi_pumped_mpram is
         , write_requested => '0');
 
     signal actual_write_in : idle_write'subtype := idle_write;
+    signal ram_write_pipeline : ram_write_in'subtype;
+    constant load_counter_high : natural := clock_mult-1;
+    signal load_counter : natural := load_counter_high;
 
 begin
 
+    ----------
+    ram_write_serializer : process(ram_clock) is
+    begin
+        if rising_edge(ram_clock)
+        then
+            ram_write_pipeline <= ram_write_in;
+            if write_requested(ram_write_in) 
+            then
+                if load_counter < load_counter_high
+                then
+                    load_counter <= load_counter + 1;
+                else
+                    load_counter <= 0;
+                    ram_write_pipeline <= idle_write & ram_write_pipeline(0 to ram_write_pipeline'high-1);
+                end if;
+            end if;
+        end if; -- rising_edge
+    end process;
+
+    actual_write_in <= ram_write_pipeline(ram_write_pipeline'high);
+
+    ----------
+    ram_read_serializer : process(ram_clock) is
+    begin
+        if rising_edge(ram_clock)
+        then
+        end if; -- rising_edge
+    end process;
+
+    ----------
     create_rams :
     for i in ram_read_in'range generate
         u_dpram : entity work.dual_port_ram
