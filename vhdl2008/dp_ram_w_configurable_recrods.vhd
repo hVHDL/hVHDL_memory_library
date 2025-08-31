@@ -23,7 +23,6 @@ package dual_port_ram_pkg is
     type ram_in_array is array (natural range <>) of ram_in_record;
     type ram_out_array is array (natural range <>) of ram_out_record;
 
-
     type dpram_ref_record is record
         ram_in       : ram_in_record;
         ram_out      : ram_out_record;
@@ -58,6 +57,9 @@ package dual_port_ram_pkg is
         signal self_in : out ram_in_record;
         address : in natural;
         data    : in std_logic_vector);
+
+    function write_requested_to_address(ram_in : ram_in_record; address : natural) 
+        return boolean;
 
 end package dual_port_ram_pkg;
 
@@ -161,6 +163,11 @@ package body dual_port_ram_pkg is
         self_in.data    <= data;
         self_in.write_requested <= '1';
     end write_data_to_ram;
+------------------------------------------------------------------------
+    function write_requested_to_address(ram_in : ram_in_record; address : natural) return boolean is
+    begin
+        return ram_in.write_requested = '1' and ram_in.address = address;
+    end write_requested_to_address;
 ------------------------------------------------------------------------
 end package body dual_port_ram_pkg;
 ------------------------------------------------------------------------
