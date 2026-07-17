@@ -181,10 +181,7 @@ library ieee;
 entity dual_port_ram is
     generic(
        g_dpram_subtype : dpram_ref_record
-       ; g_ram_init_values : work.dual_port_ram_pkg.ram_array
-           (0 to g_dpram_subtype.address_high
-           )(
-           g_dpram_subtype.data'range) := (others => (others => '0')));
+       ; g_ram_init_values : work.dual_port_ram_pkg.ram_array);
 
     port (
         clock     : in std_logic;
