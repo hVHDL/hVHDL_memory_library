@@ -58,8 +58,17 @@ package dual_port_ram_pkg is
         address : in natural;
         data    : in std_logic_vector);
 
-    function write_requested_to_address(ram_in : ram_in_record; address : natural) 
+    function write_requested_to_address(ram_in : ram_in_record; address : natural)
         return boolean;
+------------------------------------------------------------------------
+    -- lets several processes each build their own ram_in_record (starting
+    -- from an idle/all-zero state via init_ram, and setting only the
+    -- fields their own request needs) and combine them into one request
+    -- that drives a single shared dual_port_ram port : this is combining
+    -- independent ports onto a shared bus, not adding values together, so
+    -- every field is bitwise or'd ; only correct when at most one side is
+    -- active at a time
+    function "and" (left, right : ram_in_record) return ram_in_record;
 
 end package dual_port_ram_pkg;
 
@@ -168,6 +177,17 @@ package body dual_port_ram_pkg is
     begin
         return ram_in.write_requested = '1' and ram_in.address = address;
     end write_requested_to_address;
+------------------------------------------------------------------------
+    function "and" (left, right : ram_in_record) return ram_in_record is
+        variable retval : left'subtype;
+    begin
+        retval.address           := left.address or right.address;
+        retval.read_is_requested := left.read_is_requested or right.read_is_requested;
+        retval.data              := left.data or right.data;
+        retval.write_requested   := left.write_requested or right.write_requested;
+
+        return retval;
+    end function;
 ------------------------------------------------------------------------
 end package body dual_port_ram_pkg;
 ------------------------------------------------------------------------
