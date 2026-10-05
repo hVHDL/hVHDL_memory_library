@@ -5,6 +5,8 @@ library ieee;
 
 package dual_port_ram_pkg is
 
+    -- read latency with the output register (g_output_register, the
+    -- default) ; without it a read takes read_pipeline_delay - 1 clocks
     constant read_pipeline_delay : natural := 2;
     type ram_array is array (natural range <>) of std_logic_vector;
 
@@ -201,7 +203,11 @@ library ieee;
 entity dual_port_ram is
     generic(
        g_dpram_subtype : dpram_ref_record
-       ; g_ram_init_values : work.dual_port_ram_pkg.ram_array);
+       ; g_ram_init_values : work.dual_port_ram_pkg.ram_array
+       -- true : ram_x_out.data is registered once more after the ram's own
+       -- read register, a read takes 2 clocks. false : ram_x_out.data is the
+       -- read register itself, a read takes 1 clock
+       ; g_output_register : boolean := true);
 
     port (
         clock     : in std_logic;
