@@ -7,7 +7,7 @@ library vunit_lib;
 context vunit_lib.vunit_context;
 
 entity generic_multi_port_ram_tb is
-  generic (runner_cfg : string);
+  generic (runner_cfg : string; g_output_register : boolean := true);
 end;
 
 architecture vunit_simulation of generic_multi_port_ram_tb is
@@ -80,7 +80,7 @@ begin
 
     stimulus : process(simulator_clock)
         constant read_offset : natural := 57;
-        constant read_pipeline_delay : natural := 2;
+        constant read_pipeline_delay : natural := 1 + boolean'pos(g_output_register);
     begin
         if rising_edge(simulator_clock) then
             simulation_counter <= simulation_counter + 1;
@@ -116,7 +116,7 @@ begin
     end process stimulus;	
 ------------------------------------------------------------------------
     u_mpram : entity work.multi_port_ram
-    generic map(init_values)
+    generic map(init_values, g_output_register)
     port map(
         clock => simulator_clock
         ,ram_read_in => ram_read_in

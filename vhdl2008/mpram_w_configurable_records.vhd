@@ -381,7 +381,10 @@ library ieee;
     use work.dual_port_ram_pkg.all;
 
 entity multi_port_ram is
-    generic(initial_values : work.dual_port_ram_pkg.ram_array);
+    generic(
+        initial_values : work.dual_port_ram_pkg.ram_array
+        -- dual_port_ram's : true, a read takes 2 clocks ; false, 1 clock
+        ;g_output_register : boolean := true);
     port (
         clock         : in std_logic
         ;ram_read_in  : in work.multi_port_ram_pkg.ram_read_in_array
@@ -409,7 +412,7 @@ begin
     create_rams :
     for i in ram_read_in'range generate
         u_dpram : entity work.dual_port_ram
-        generic map(dp_ram_subtype, initial_values)
+        generic map(dp_ram_subtype, initial_values, g_output_register)
         port map(
         clock        
         ,ram_a_in(i)  

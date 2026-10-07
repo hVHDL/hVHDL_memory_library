@@ -61,6 +61,9 @@ ram_wo_generic_packages.add_source_files(ROOT / "vhdl2008/mpram_w_configurable_r
 
 ram_wo_generic_packages.add_source_files(ROOT / "testbench/dual_port_ram/tb_configurable_dp_ram.vhd")
 ram_wo_generic_packages.add_source_files(ROOT / "testbench/dual_port_ram/configurable_multi_port_ram_tb.vhd")
+mpram_tb = ram_wo_generic_packages.test_bench("generic_multi_port_ram_tb")
+mpram_tb.add_config(name="output_register", generics=dict(g_output_register=True))
+mpram_tb.add_config(name="no_output_register", generics=dict(g_output_register=False))
 
 ram_wo_generic_packages.add_source_files(ROOT / "testbench/multi_port_ram/multi_pumped_mpram_tb.vhd")
 
