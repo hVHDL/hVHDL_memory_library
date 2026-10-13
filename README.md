@@ -14,11 +14,16 @@ testbench/multi_port_ram.
 
 ## hyperram
 
-hyperram/hyperram_axi.vhd : a HyperRAM (W959D8NFYA, x8, two dies) controller behind an AXI3
-port with a shared read/write address channel, with the phase of the read clock calibrated
-at power up. Tested on hardware: a Titanium Ti60 at 200 MHz as the DDR memory of a Sapphire
-SoC. hyperram/hyperram_pkg.vhd has the command/address frames and the pin records, and
-testbench/hyperram has a model of the memory and the controller's testbench.
+hyperram/hyperram_core.vhd : a HyperRAM (W959D8NFYA, x8, two dies) controller with a native
+interface of 16 bit words: a command (write or read, a word address, 1..512 words within 1 KB),
+the write words asked for one a clock (the client's registered answer), the read words given back
+one a clock, a timed out read padded; its pins, timing, read capture and the calibration of the
+read clock's phase at power up are all here. hyperram/hyperram_axi.vhd puts an AXI3 port (a
+shared read/write address channel) in front of it: its queue, write and read buffers, burst
+splitting and in order responses. Tested on hardware: a Titanium Ti60 at 200 MHz as the DDR
+memory of a Sapphire SoC. hyperram/hyperram_pkg.vhd has the command/address frames and the pin
+records; testbench/hyperram has a model of the memory and both testbenches (hyperram_core_tb
+through the native interface, hyperram_axi_tb through AXI).
 
 ## sample buffer
 

@@ -27,14 +27,21 @@ hyperram = VU.add_library("hyperram")
 hyperram.add_source_files(ROOT / "vhdl2008/dp_ram_w_configurable_records.vhd")
 hyperram.add_source_files(ROOT / "vhdl2008/arch_sim_dp_ram_w_configurable_records.vhd")
 hyperram.add_source_files(ROOT / "hyperram/hyperram_pkg.vhd")
+hyperram.add_source_files(ROOT / "hyperram/hyperram_core.vhd")
 hyperram.add_source_files(ROOT / "hyperram/hyperram_axi.vhd")
 hyperram.add_source_files(ROOT / "testbench/hyperram/hyperram_model.vhd")
 hyperram.add_source_files(ROOT / "testbench/hyperram/hyperram_axi_tb.vhd")
+hyperram.add_source_files(ROOT / "testbench/hyperram/hyperram_core_tb.vhd")
+core_tb = hyperram.test_bench("hyperram_core_tb")
 axi_tb = hyperram.test_bench("hyperram_axi_tb")
 for tckd in (1.5, 3.0, 4.5):
     for lo_lags in (False, True):
         axi_tb.add_config(name=f"tckd_{tckd}_lo_{'lags' if lo_lags else 'leads'}",
                           generics=dict(tckd_ns=tckd, lo_lags=lo_lags))
+for tckd in (1.5, 3.0, 4.5):
+    for lo_lags in (False, True):
+        core_tb.add_config(name=f"tckd_{tckd}_lo_{'lags' if lo_lags else 'leads'}",
+                           generics=dict(tckd_ns=tckd, lo_lags=lo_lags))
 # the word counters starting just below 2**31, so a run crosses it
 axi_tb.add_config(name="word_counters_wrap", generics=dict(word_count_start=2**31 - 3000))
 
