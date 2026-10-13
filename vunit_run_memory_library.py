@@ -67,6 +67,22 @@ mpram_tb.add_config(name="no_output_register", generics=dict(g_output_register=F
 
 ram_wo_generic_packages.add_source_files(ROOT / "testbench/multi_port_ram/multi_pumped_mpram_tb.vhd")
 
+# HyperRAM (W959D8NFYA, two dies) behind an AXI3 port, with the memory's model
+hyperram = VU.add_library("hyperram")
+hyperram.add_source_files(ROOT / "vhdl2008/dp_ram_w_configurable_recrods.vhd")
+hyperram.add_source_files(ROOT / "vhdl2008/arch_sim_dp_ram_w_configurable_records.vhd")
+hyperram.add_source_files(ROOT / "hyperram/hyperram_pkg.vhd")
+hyperram.add_source_files(ROOT / "hyperram/hyperram_axi.vhd")
+hyperram.add_source_files(ROOT / "testbench/hyperram/hyperram_model.vhd")
+hyperram.add_source_files(ROOT / "testbench/hyperram/hyperram_axi_tb.vhd")
+axi_tb = hyperram.test_bench("hyperram_axi_tb")
+for tckd in (1.5, 3.0, 4.5):
+    for lo_lags in (False, True):
+        axi_tb.add_config(name=f"tckd_{tckd}_lo_{'lags' if lo_lags else 'leads'}",
+                          generics=dict(tckd_ns=tckd, lo_lags=lo_lags))
+# the word counters starting just below 2**31, so a run crosses it
+axi_tb.add_config(name="word_counters_wrap", generics=dict(word_count_start=2**31 - 3000))
+
 # VU.set_sim_option("nvc.sim_flags", ["-w"])
 
 VU.main()
