@@ -34,6 +34,12 @@ package sample_trigger_generic_pkg is
     function get_write_address(self : sample_trigger_record) return natural;
     function get_sample_address(self : sample_trigger_record) return natural;
     procedure calculate_read_address(signal self : inout sample_trigger_record);
+    -- the address calculate_read_address sets, already in the clock it is
+    -- called : the buffer read out from its oldest sample, with
+    --     request_data_from_ram(ram_in, get_next_sample_address(trigger));
+    --     calculate_read_address(trigger);
+    -- (get_sample_address is that address only a clock later)
+    function get_next_sample_address(self : sample_trigger_record) return natural;
 
 end package sample_trigger_generic_pkg;
 
@@ -133,5 +139,10 @@ package body sample_trigger_generic_pkg is
             self.read_counter <= 0;
         end if;
     end calculate_read_address;
+---------------------------------------------
+    function get_next_sample_address(self : sample_trigger_record) return natural is
+    begin
+        return (self.write_address + self.read_counter) mod g_ram_depth;
+    end get_next_sample_address;
 ---------------------------------------------
 end package body sample_trigger_generic_pkg;
