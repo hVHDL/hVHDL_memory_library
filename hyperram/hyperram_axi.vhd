@@ -28,7 +28,8 @@ library ieee;
 --
 -- Calibration after power up is the core's (hyperram_core): the AXI port is closed until then.
 --
--- status: as hyperram_core's: bit0 calibrated, bit1 no setting passed (the default is used),
+-- status: as hyperram_core's (its layout for a relative phase there); absolute phase: bit0
+--         calibrated, bit1 no setting passed (the default is used),
 --         bits 15:8 phases that passed with the hi input half first, bits 23:16 with the lo half
 --         first, bits 26:24 selected phase, bit 27 selected order (lo half first)
 entity hyperram_axi is
@@ -43,6 +44,9 @@ entity hyperram_axi is
         g_calibration_address_1 : natural := 16#3FFFF80#;
         g_default_phase      : natural range 0 to 7 := 5;
         g_default_lo_first   : boolean := true;
+        g_phase_steps        : natural := 0;          -- relative read clock phase, see hyperram_core
+        g_min_window         : positive := 1;
+        g_phase_timeout      : positive := 50000;
         g_word_count_start   : natural := 0           -- simulation: the word counters' start, to test their wrap
     );
     port(
@@ -87,6 +91,7 @@ entity hyperram_axi is
 
         phase_shift        : out pll_phase_shift_record;
         phase_shift_output : in natural range 0 to 4 := 3;   -- PLL output of the read clock
+        phase_shift_done   : in std_logic := '0';             -- relative phase: a step applied
         fpga_out           : out hyperram_ddr_fpga_out_record;
         -- from the input DDIO registers, clocked by the read clock (the PLL's dynamic phase output)
         fpga_in            : in hyperram_ddr_fpga_in_record
@@ -211,6 +216,7 @@ begin
         g_recovery_clocks => g_recovery_clocks, g_settle_clocks => g_settle_clocks,
         g_calibration_address_0 => g_calibration_address_0, g_calibration_address_1 => g_calibration_address_1,
         g_default_phase => g_default_phase, g_default_lo_first => g_default_lo_first,
+        g_phase_steps => g_phase_steps, g_min_window => g_min_window, g_phase_timeout => g_phase_timeout,
         g_word_count_start => g_word_count_start)
     port map(
         clock => clock, reset => reset, in_reset => reset_i,
@@ -223,6 +229,7 @@ begin
         calibration_done => calibrated, calibration_passed => calibration_passed,
         status => status, read_timeouts => read_timeouts, core_debug => core_debug,
         phase_shift => phase_shift, phase_shift_output => phase_shift_output,
+        phase_shift_done => phase_shift_done,
         fpga_out => fpga_out, fpga_in => fpga_in);
 
     calibration_done <= calibrated;

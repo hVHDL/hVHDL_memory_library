@@ -49,9 +49,25 @@ library ieee;
 -- widest window of passing phases is used. Commands are taken only after it. The two areas
 -- (64 words each) are the core's.
 --
--- status: bit0 calibrated, bit1 no setting passed (the default is used), bits 15:8 phases that
---         passed with the hi input half first, bits 23:16 with the lo half first, bits 26:24
---         selected phase, bit 27 selected order (lo half first)
+-- Relative read clock phase (g_phase_steps > 0, e.g. the Agilex 3 I/O PLL through its EMIF
+-- calibration IP): there each change of the PLL's phase value moves the read clock relative
+-- to where it is, and only a change by -1 (mod 8) is exact - one step (1/8 VCO period)
+-- earlier; other changes can slip a whole VCO period. So the calibration walks the read clock
+-- down a step at a time through g_phase_steps steps (one read clock period), each step
+-- acknowledged by a toggle on phase_shift_done (the PLL reconfiguration has written it), and
+-- tests both orders of the input halves at every step with long and short reads (the short
+-- ones check the framing at the start of a read). It then walks on to the middle of the
+-- widest window of passing steps (circular). A window narrower than g_min_window steps, or a
+-- step that is not acknowledged within g_phase_timeout clocks, fails the calibration
+-- (status bit 1); the best setting found is used all the same.
+--
+-- status (g_phase_steps = 0): bit0 calibrated, bit1 no setting passed (the default is used),
+--         bits 15:8 phases that passed with the hi input half first, bits 23:16 with the lo
+--         half first, bits 26:24 selected phase, bit 27 selected order (lo half first)
+-- status (g_phase_steps > 0): bit0 calibrated, bit1 failed (no window of g_min_window steps,
+--         or a step not acknowledged), bit2 selected order (lo half first), bit3 a step not
+--         acknowledged, bits 11:4 the selected step, bits 19:12 its window's width (steps),
+--         bits 27:20 the other order's widest window
 -- core_debug: bits 3:0 the core's state, 7:4 the calibration's, 23:8 transactions started
 entity hyperram_core is
     generic(
@@ -65,6 +81,11 @@ entity hyperram_core is
         g_calibration_address_1 : natural := 16#3FFFF80#;
         g_default_phase      : natural range 0 to 7 := 5;
         g_default_lo_first   : boolean := true;
+        -- 0: absolute read clock phase, 8 settings; > 0: relative steps, a read clock period
+        -- of them (above)
+        g_phase_steps        : natural := 0;
+        g_min_window         : positive := 1;         -- steps
+        g_phase_timeout      : positive := 50000;     -- clocks for a step's phase_shift_done
         g_word_count_start   : natural := 0           -- simulation: the word counters' start, to test their wrap
     );
     port(
@@ -95,6 +116,8 @@ entity hyperram_core is
 
         phase_shift        : out pll_phase_shift_record;
         phase_shift_output : in natural range 0 to 4 := 3;   -- PLL output of the read clock
+        -- relative phase (g_phase_steps > 0): toggles when a requested step has been applied
+        phase_shift_done   : in std_logic := '0';
         fpga_out           : out hyperram_ddr_fpga_out_record;
         -- from the input DDIO registers, clocked by the read clock (the PLL's dynamic phase output)
         fpga_in            : in hyperram_ddr_fpga_in_record
@@ -105,6 +128,8 @@ architecture rtl of hyperram_core is
 
     constant max_words      : natural := 512;     -- of a transaction: 1 KB
     constant pattern_words  : natural := 64;
+
+    attribute async_reg : boolean;
 
     function to_std(b : boolean) return std_logic is
     begin
@@ -125,12 +150,31 @@ architecture rtl of hyperram_core is
         return r;
     end function;
 
+    -- relative phase: the calibration's reads at each step - both areas whole, then single
+    -- words and a pair (the start of a read, its framing)
+    type test_record is record
+        die_1 : boolean;
+        index : natural range 0 to 63;      -- the first word's index in the pattern
+        words : natural range 1 to 64;
+    end record;
+    type test_table is array (0 to 4) of test_record;
+    constant test_list : test_table := ((false, 0, 64), (true, 0, 64), (false, 0, 1), (false, 37, 1),
+                                        (true, 18, 2));
+
+    function to_unsigned_8(n : natural) return std_logic_vector is
+    begin
+        return std_logic_vector(to_unsigned(n mod 256, 8));
+    end function;
+
     -- the core
     type core_states is (reset_low, power_up, idle, transaction, finish, recovery);
     signal core_state : core_states := reset_low;
     signal counter    : natural range 0 to g_power_up_clocks := 0;
     type calibration_states is (write_die_0, write_die_1, set_phase, settle, read_die_0, read_die_1,
-                                wait_words, next_setting, choose);
+                                wait_words, next_setting, choose,
+                                -- relative phase
+                                r_settle, r_test, r_test_wait, r_record, r_step, r_wait_step,
+                                r_choose, r_finish);
     signal calibration_state : calibration_states := write_die_0;
     signal setting       : natural range 0 to 15 := 0;      -- lo first = setting/8, phase = setting mod 8
     signal cal_timer     : natural range 0 to g_settle_clocks := 0;
@@ -146,12 +190,34 @@ architecture rtl of hyperram_core is
     signal cal_failed    : boolean := false;
     signal read_phase    : natural range 0 to 7 := 0;
     signal lo_first      : boolean := false;
+    -- relative phase: the step the read clock is at (steps taken down, mod a period), what
+    -- passed at each, the tests at a step (long and short reads), the walk
+    constant relative    : boolean := g_phase_steps > 0;
+    constant steps       : positive := maximum(g_phase_steps, 1);
+    constant tests       : natural := 5;
+    signal pos           : natural range 0 to steps - 1 := 0;
+    signal pass_hi, pass_lo : std_logic_vector(0 to steps - 1) := (others => '0');
+    signal done_sync     : std_logic_vector(2 downto 0) := "000";
+    attribute async_reg of done_sync : signal is true;
+    signal done_seen     : std_logic := '0';
+    signal step_timer    : natural range 0 to g_phase_timeout := 0;
+    signal step_timed_out : boolean := false;
+    signal walking       : boolean := false;
+    signal swept         : natural range 0 to steps := 0;
+    signal walk_left     : natural range 0 to steps := 0;
+    signal test          : natural range 0 to tests := 0;
+    signal cal_expect    : natural range 0 to pattern_words := 0;   -- the next word's pattern index
+    signal cal_left      : natural range 0 to pattern_words := 0;   -- words of the read still to come
+    signal scan          : natural range 0 to 4*steps := 0;
+    signal run_len       : natural range 0 to steps := 0;
+    signal len_hi, len_lo     : natural range 0 to steps := 0;
+    signal start_hi, start_lo : natural range 0 to steps - 1 := 0;
+    signal best_len      : natural range 0 to steps := 0;
+    signal other_len     : natural range 0 to steps := 0;
     -- the reset (the PLL not locked, asynchronous) through two registers, so every register
     -- here sees it at the same clock
     signal reset_sync : std_logic_vector(1 downto 0) := "11";
     signal reset_i    : boolean := true;
-    attribute async_reg : boolean;
-    attribute async_reg of reset_sync : signal is true;
     -- the transaction in progress
     signal is_write       : boolean := false;
     signal is_calibration : boolean := false;
@@ -225,7 +291,10 @@ begin
     calibration_done   <= calibrated;
     calibration_passed <= calibrated and not cal_failed;
     status <= x"0" & to_std(lo_first) & std_logic_vector(to_unsigned(read_phase, 3))
-              & pass_map(15 downto 8) & pass_map(7 downto 0) & "000000" & to_std(cal_failed) & to_std(calibrated);
+              & pass_map(15 downto 8) & pass_map(7 downto 0) & "000000" & to_std(cal_failed) & to_std(calibrated)
+              when not relative else
+              x"0" & to_unsigned_8(other_len) & to_unsigned_8(best_len) & to_unsigned_8(pos)
+              & to_std(step_timed_out) & to_std(lo_first) & to_std(cal_failed) & to_std(calibrated);
     read_timeouts <= timeouts;
     core_debug <= std_logic_vector(transactions)
                   & std_logic_vector(to_unsigned(calibration_states'pos(calibration_state), 4))
@@ -237,6 +306,9 @@ begin
         variable k    : natural;
         variable word : std_logic_vector(15 downto 0);
         variable strobe : std_logic_vector(1 downto 0);
+        -- relative phase: the window search
+        variable i, run, target : natural;
+        variable bit    : std_logic;
 
         -- starts a transaction of 'count' words at word address 'address'
         procedure start(write, calibration : boolean; address : unsigned(24 downto 0); count : natural) is
@@ -270,6 +342,8 @@ begin
             write_request_r <= false;
             done_r          <= false;
 
+            done_sync <= done_sync(1 downto 0) & phase_shift_done;
+
             -- CK of the next cycle, the CK pin register samples this a quarter cycle later
             ck_lo_r <= to_std(ck_enable);
 
@@ -282,7 +356,7 @@ begin
                 elsif phase_timer = 10 then
                     shift_enable_r <= '0';
                 end if;
-            elsif read_phase /= applied_phase then
+            elsif not relative and read_phase /= applied_phase then
                 shift_r       <= std_logic_vector(to_unsigned(read_phase, 3));
                 applied_phase <= read_phase;
                 phase_timer   <= 24;
@@ -321,7 +395,164 @@ begin
                                 calibration_state <= write_die_1;
                             WHEN write_die_1 =>
                                 start(true, true, to_unsigned(g_calibration_address_1 / 2, 25), pattern_words);
-                                calibration_state <= set_phase;
+                                if relative then
+                                    lo_first   <= false;
+                                    swept      <= 0;
+                                    walking    <= false;
+                                    cal_timer  <= 0;
+                                    calibration_state <= r_settle;
+                                else
+                                    calibration_state <= set_phase;
+                                end if;
+
+                            ----------------------------------------------------
+                            -- relative phase
+                            WHEN r_settle =>
+                                -- the PLL output settled after a step, the capture after a
+                                -- change of the order
+                                if cal_timer < g_settle_clocks then
+                                    cal_timer <= cal_timer + 1;
+                                else
+                                    cal_ok <= true;
+                                    test   <= 0;
+                                    calibration_state <= r_test;
+                                end if;
+                            WHEN r_test =>
+                                if test_list(test).die_1 then
+                                    start(false, true, to_unsigned(g_calibration_address_1 / 2 + test_list(test).index, 25),
+                                          test_list(test).words);
+                                else
+                                    start(false, true, to_unsigned(g_calibration_address_0 / 2 + test_list(test).index, 25),
+                                          test_list(test).words);
+                                end if;
+                                cal_expect <= test_list(test).index;
+                                cal_left   <= test_list(test).words;
+                                calibration_state <= r_test_wait;
+                            WHEN r_test_wait =>
+                                if cal_left = 0 then
+                                    if test < tests - 1 then
+                                        test <= test + 1;
+                                        calibration_state <= r_test;
+                                    else
+                                        calibration_state <= r_record;
+                                    end if;
+                                end if;
+                            WHEN r_record =>
+                                cal_timer <= 0;
+                                if not lo_first then
+                                    pass_hi(pos) <= to_std(cal_ok);
+                                    lo_first <= true;
+                                    calibration_state <= r_settle;
+                                else
+                                    pass_lo(pos) <= to_std(cal_ok);
+                                    lo_first <= false;
+                                    calibration_state <= r_step;
+                                end if;
+                            WHEN r_step =>
+                                -- one step earlier: the phase value down by one
+                                if phase_timer = 0 then
+                                    shift_r     <= std_logic_vector(unsigned(shift_r) - 1);
+                                    phase_timer <= 24;
+                                    step_timer  <= 0;
+                                    calibration_state <= r_wait_step;
+                                end if;
+                            WHEN r_wait_step =>
+                                if done_sync(2) /= done_seen then
+                                    done_seen <= done_sync(2);
+                                    if pos = steps - 1 then
+                                        pos <= 0;
+                                    else
+                                        pos <= pos + 1;
+                                    end if;
+                                    cal_timer <= 0;
+                                    if walking then
+                                        if walk_left <= 1 then
+                                            walk_left <= 0;
+                                            calibration_state <= r_finish;
+                                        else
+                                            walk_left <= walk_left - 1;
+                                            calibration_state <= r_step;
+                                        end if;
+                                    elsif swept = steps - 1 then
+                                        swept <= steps;
+                                        scan  <= 0;
+                                        len_hi <= 0;
+                                        len_lo <= 0;
+                                        calibration_state <= r_choose;
+                                    else
+                                        swept <= swept + 1;
+                                        calibration_state <= r_settle;
+                                    end if;
+                                elsif step_timer < g_phase_timeout then
+                                    step_timer <= step_timer + 1;
+                                else
+                                    -- not acknowledged: the step's fate unknown, stop here
+                                    step_timed_out <= true;
+                                    calibration_state <= r_finish;
+                                end if;
+                            WHEN r_choose =>
+                                -- the widest circular window of each order, a step a clock: each
+                                -- order's map scanned twice round, a run at most a period long
+                                if scan < 4*steps then
+                                    i := scan mod (2*steps);
+                                    if scan < 2*steps then
+                                        bit := pass_hi(i mod steps);
+                                    else
+                                        bit := pass_lo(i mod steps);
+                                    end if;
+                                    if bit = '0' then
+                                        run := 0;
+                                    elsif i = 0 then
+                                        run := 1;
+                                    else
+                                        run := minimum(run_len + 1, steps);
+                                    end if;
+                                    run_len <= run;
+                                    if scan < 2*steps and run > len_hi then
+                                        len_hi   <= run;
+                                        start_hi <= (i + 1 + steps - run) mod steps;
+                                    elsif scan >= 2*steps and run > len_lo then
+                                        len_lo   <= run;
+                                        start_lo <= (i + 1 + steps - run) mod steps;
+                                    end if;
+                                    scan <= scan + 1;
+                                else
+                                    -- the wider window's middle (the hi half first on a tie), walked
+                                    -- to from here; nothing passed: stay, the default order
+                                    if len_lo > len_hi then
+                                        best_len      <= len_lo;
+                                        other_len     <= len_hi;
+                                        best_lo_first <= true;
+                                        target := (start_lo + (len_lo - 1) / 2) mod steps;
+                                    elsif len_hi > 0 then
+                                        best_len      <= len_hi;
+                                        other_len     <= len_lo;
+                                        best_lo_first <= false;
+                                        target := (start_hi + (len_hi - 1) / 2) mod steps;
+                                    else
+                                        best_len      <= 0;
+                                        other_len     <= 0;
+                                        best_lo_first <= g_default_lo_first;
+                                        target := pos;
+                                    end if;
+                                    walk_left <= (target + steps - pos) mod steps;
+                                    walking   <= true;
+                                    cal_timer <= 0;
+                                    if target = pos then
+                                        calibration_state <= r_finish;
+                                    else
+                                        calibration_state <= r_step;
+                                    end if;
+                                end if;
+                            WHEN r_finish =>
+                                -- after the last step's settling
+                                if cal_timer < g_settle_clocks then
+                                    cal_timer <= cal_timer + 1;
+                                else
+                                    lo_first   <= best_lo_first;
+                                    cal_failed <= step_timed_out or best_len < g_min_window;
+                                    calibrated <= true;
+                                end if;
                             WHEN set_phase =>
                                 read_phase <= setting mod 8;
                                 lo_first   <= setting >= 8;
@@ -502,10 +733,22 @@ begin
 
             -- the calibration's reads: their words checked here
             if out_valid and not calibrated then
-                if out_word /= pattern_word(cal_word mod pattern_words) then
-                    cal_ok <= false;
+                if relative then
+                    if out_word /= pattern_word(cal_expect) then
+                        cal_ok <= false;
+                    end if;
+                    if cal_expect < pattern_words - 1 then
+                        cal_expect <= cal_expect + 1;
+                    end if;
+                    if cal_left > 0 then
+                        cal_left <= cal_left - 1;
+                    end if;
+                else
+                    if out_word /= pattern_word(cal_word mod pattern_words) then
+                        cal_ok <= false;
+                    end if;
+                    cal_word <= cal_word + 1;
                 end if;
-                cal_word <= cal_word + 1;
             end if;
 
             if reset_i then
@@ -519,6 +762,20 @@ begin
                 search_index      <= 0;
                 best_length       <= 0;
                 run_length        <= 0;
+                -- relative phase: the PLL's phase is back where it started (it relocks)
+                pos               <= 0;
+                swept             <= 0;
+                walking           <= false;
+                walk_left         <= 0;
+                step_timed_out    <= false;
+                best_len          <= 0;
+                other_len         <= 0;
+                done_seen         <= done_sync(2);
+                if relative then
+                    shift_r       <= (others => '0');
+                    phase_timer   <= 0;
+                    shift_enable_r <= '0';
+                end if;
                 words_expected    <= word_count_start;
                 cs_n_r            <= '1';
                 ck_enable         <= false;

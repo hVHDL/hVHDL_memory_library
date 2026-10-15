@@ -42,6 +42,9 @@ for tckd in (1.5, 3.0, 4.5):
     for lo_lags in (False, True):
         core_tb.add_config(name=f"tckd_{tckd}_lo_{'lags' if lo_lags else 'leads'}",
                            generics=dict(tckd_ns=tckd, lo_lags=lo_lags))
+# the relative read clock phase (the Agilex 3 I/O PLL's), a period of 96 steps
+for tckd in (1.5, 3.0, 4.5):
+    core_tb.add_config(name=f"relative_tckd_{tckd}", generics=dict(tckd_ns=tckd, phase_steps=96))
 # the word counters starting just below 2**31, so a run crosses it
 axi_tb.add_config(name="word_counters_wrap", generics=dict(word_count_start=2**31 - 3000))
 

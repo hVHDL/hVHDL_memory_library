@@ -19,8 +19,13 @@ context vunit_lib.vunit_context;
 --                                     timeout counted, the next read right
 --   tckd_ns      CK to DQ/RWDS delay of the memory model
 --   lo_lags      pairing of the input DDIO halves, see the input register model
+--   phase_steps  0: the PLL's phase is absolute (8 steps of 250 ps); > 0: relative, as the
+--                Agilex 3 I/O PLL's - each change of the shift value by -1 moves the read clock
+--                a step (a period / phase_steps) earlier, acknowledged on phase_shift_done
+--                after a write's latency; any other change is an error here
 entity hyperram_core_tb is
-  generic (runner_cfg : string; tckd_ns : real := 3.0; lo_lags : boolean := true);
+  generic (runner_cfg : string; tckd_ns : real := 3.0; lo_lags : boolean := true;
+           phase_steps : natural := 0);
 end;
 
 architecture vunit_simulation of hyperram_core_tb is
@@ -52,6 +57,8 @@ architecture vunit_simulation of hyperram_core_tb is
     signal read_timeouts : unsigned(15 downto 0);
     signal core_debug    : std_logic_vector(23 downto 0);
     signal phase_shift   : pll_phase_shift_record;
+    signal phase_shift_done : std_logic := '0';
+    constant write_latency  : time := 3 us;       -- of a phase write through the calibration IP
     signal fpga_out      : hyperram_ddr_fpga_out_record;
     signal fpga_in       : hyperram_ddr_fpga_in_record;
     signal fpga_in_model : hyperram_ddr_fpga_in_record;
@@ -82,12 +89,32 @@ begin
     reset      <= false after 100 ns;
 
     -- PLL dynamic phase shift: SHIFT is taken when SHIFT_ENA is high
-    pll_model : process(phase_shift.shift_enable)
-    begin
-        if phase_shift.shift_enable = '1' and phase_shift.shift_select = "01000" then
-            read_delay <= to_integer(unsigned(phase_shift.shift)) * phase_step;
-        end if;
-    end process;
+    absolute_pll : if phase_steps = 0 generate
+        pll_model : process(phase_shift.shift_enable)
+        begin
+            if phase_shift.shift_enable = '1' and phase_shift.shift_select = "01000" then
+                read_delay <= to_integer(unsigned(phase_shift.shift)) * phase_step;
+            end if;
+        end process;
+    end generate;
+
+    relative_pll : if phase_steps > 0 generate
+        pll_model : process
+            variable mux   : unsigned(2 downto 0) := "000";
+            variable steps_down : natural := 0;
+        begin
+            wait until rising_edge(phase_shift.shift_enable);
+            if phase_shift.shift_select = "01000" and unsigned(phase_shift.shift) /= mux then
+                check(unsigned(phase_shift.shift) = mux - 1, "a relative phase changes only by -1");
+                mux := unsigned(phase_shift.shift);
+                steps_down := (steps_down + 1) mod phase_steps;
+                wait for write_latency;
+                -- a step earlier: the read clock's delay one step less, round a period
+                read_delay <= ((phase_steps - steps_down) mod phase_steps) * (hr_period / phase_steps);
+                phase_shift_done <= not phase_shift_done;
+            end if;
+        end process;
+    end generate;
 
 ------------------------------------------------------------------------
     -- output registers: DDIO resync, both halves taken on the rising edge, hi driven in the
@@ -155,7 +182,8 @@ begin
 
 ------------------------------------------------------------------------
     dut : entity work.hyperram_core
-    generic map(g_reset_low_clocks => 20, g_power_up_clocks => 100, g_settle_clocks => 20)
+    generic map(g_reset_low_clocks => 20, g_power_up_clocks => 100, g_settle_clocks => 20,
+                g_phase_steps => phase_steps, g_min_window => 8)
     port map(
         clock => hr_clock, reset => reset, in_reset => in_reset,
         command_valid => command_valid, command_ready => command_ready, command_write => command_write,
@@ -164,7 +192,8 @@ begin
         read_valid => read_valid, read_word => read_word, done => done,
         calibration_done => calibration_done, calibration_passed => calibration_passed,
         status => status, read_timeouts => read_timeouts, core_debug => core_debug,
-        phase_shift => phase_shift, fpga_out => fpga_out, fpga_in => fpga_in);
+        phase_shift => phase_shift, phase_shift_done => phase_shift_done,
+        fpga_out => fpga_out, fpga_in => fpga_in);
 
 ------------------------------------------------------------------------
     -- the client: every write request answered on the edge it is seen; every read word taken
@@ -275,7 +304,7 @@ begin
         variable timeouts_before : unsigned(15 downto 0);
     begin
         test_runner_setup(runner, runner_cfg);
-        wait until calibration_done for 1 ms;
+        wait until calibration_done for 5 ms;
         check(calibration_done, "calibrated");
         info("calibration status " & to_hstring(status) & ", " & integer'image(to_integer(read_timeouts)) & " read timeouts");
 
@@ -283,6 +312,14 @@ begin
             if run("calibrates_on_both_dies") then
                 check(calibration_passed, "a setting passed");
                 check(status(0) = '1' and status(1) = '0', "the status: calibrated, a setting passed");
+                if phase_steps > 0 then
+                    info("relative phase: step " & integer'image(to_integer(unsigned(status(11 downto 4))))
+                         & ", window " & integer'image(to_integer(unsigned(status(19 downto 12))))
+                         & " steps, the other order's " & integer'image(to_integer(unsigned(status(27 downto 20)))));
+                    check(status(3) = '0', "every step acknowledged");
+                    check(to_integer(unsigned(status(19 downto 12))) >= 8, "a window of 8 steps or more");
+                    check(to_integer(unsigned(status(19 downto 12))) < phase_steps, "a window with edges");
+                end if;
 
             elsif run("writes_and_reads_back") then
                 -- 1, 3 and 64 words, a whole 1 KB (512 words), the last words of die 0 and
