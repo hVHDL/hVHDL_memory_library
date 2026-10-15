@@ -23,9 +23,11 @@ context vunit_lib.vunit_context;
 --                Agilex 3 I/O PLL's - each change of the shift value by -1 moves the read clock
 --                a step (a period / phase_steps) earlier, acknowledged on phase_shift_done
 --                after a write's latency; any other change is an error here
+--   ignored_steps  relative: the first steps acknowledged but not made (the Agilex 3 PLL right
+--                after configuration) - the calibration's check of its step must catch it
 entity hyperram_core_tb is
   generic (runner_cfg : string; tckd_ns : real := 3.0; lo_lags : boolean := true;
-           phase_steps : natural := 0);
+           phase_steps : natural := 0; ignored_steps : natural := 0);
 end;
 
 architecture vunit_simulation of hyperram_core_tb is
@@ -102,12 +104,16 @@ begin
         pll_model : process
             variable mux   : unsigned(2 downto 0) := "000";
             variable steps_down : natural := 0;
+            variable requests   : natural := 0;
         begin
             wait until rising_edge(phase_shift.shift_enable);
             if phase_shift.shift_select = "01000" and unsigned(phase_shift.shift) /= mux then
                 check(unsigned(phase_shift.shift) = mux - 1, "a relative phase changes only by -1");
                 mux := unsigned(phase_shift.shift);
-                steps_down := (steps_down + 1) mod phase_steps;
+                requests := requests + 1;
+                if requests > ignored_steps then
+                    steps_down := (steps_down + 1) mod phase_steps;
+                end if;
                 wait for write_latency;
                 -- a step earlier: the read clock's delay one step less, round a period
                 read_delay <= ((phase_steps - steps_down) mod phase_steps) * (hr_period / phase_steps);
@@ -183,7 +189,7 @@ begin
 ------------------------------------------------------------------------
     dut : entity work.hyperram_core
     generic map(g_reset_low_clocks => 20, g_power_up_clocks => 100, g_settle_clocks => 20,
-                g_phase_steps => phase_steps, g_min_window => 8)
+                g_phase_steps => phase_steps, g_min_window => 8, g_cal_attempts => 3)
     port map(
         clock => hr_clock, reset => reset, in_reset => in_reset,
         command_valid => command_valid, command_ready => command_ready, command_write => command_write,
@@ -315,7 +321,8 @@ begin
                 if phase_steps > 0 then
                     info("relative phase: step " & integer'image(to_integer(unsigned(status(11 downto 4))))
                          & ", window " & integer'image(to_integer(unsigned(status(19 downto 12))))
-                         & " steps, the other order's " & integer'image(to_integer(unsigned(status(27 downto 20)))));
+                         & " steps, the other order's " & integer'image(to_integer(unsigned(status(27 downto 20))))
+                         & ", " & integer'image(to_integer(unsigned(status(31 downto 28)))) & " sweeps");
                     check(status(3) = '0', "every step acknowledged");
                     check(to_integer(unsigned(status(19 downto 12))) >= 8, "a window of 8 steps or more");
                     check(to_integer(unsigned(status(19 downto 12))) < phase_steps, "a window with edges");

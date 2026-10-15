@@ -57,9 +57,16 @@ library ieee;
 -- acknowledged by a toggle on phase_shift_done (the PLL reconfiguration has written it), and
 -- tests both orders of the input halves at every step with long and short reads (the short
 -- ones check the framing at the start of a read). It then walks on to the middle of the
--- widest window of passing steps (circular). A window narrower than g_min_window steps, or a
--- step that is not acknowledged within g_phase_timeout clocks, fails the calibration
--- (status bit 1); the best setting found is used all the same.
+-- widest window of passing steps (circular). The sweep chooses the order of the halves; the
+-- step itself is then found by what the reads show, not by counting steps (the Agilex 3 PLL
+-- acknowledges the odd step it has not made, so counted positions drift): a seek walks on
+-- down, testing at every step - out of the window, through it once (its width, in steps
+-- made: two fails in a row end it; a run under g_min_window steps is a stray pass, not the
+-- window), round to it again, and half its width into it. A lost
+-- step only makes the walk longer. The step reached is tested once more; a failure starts
+-- it all again, at most g_cal_attempts times. A window narrower than g_min_window
+-- steps, a check that still fails, or a step that is not acknowledged within g_phase_timeout
+-- clocks, fails the calibration (status bit 1); the best setting found is used all the same.
 --
 -- status (g_phase_steps = 0): bit0 calibrated, bit1 no setting passed (the default is used),
 --         bits 15:8 phases that passed with the hi input half first, bits 23:16 with the lo
@@ -67,7 +74,7 @@ library ieee;
 -- status (g_phase_steps > 0): bit0 calibrated, bit1 failed (no window of g_min_window steps,
 --         or a step not acknowledged), bit2 selected order (lo half first), bit3 a step not
 --         acknowledged, bits 11:4 the selected step, bits 19:12 its window's width (steps),
---         bits 27:20 the other order's widest window
+--         bits 27:20 the other order's widest window (the sweep's), 31:28 calibrations made
 -- core_debug: bits 3:0 the core's state, 7:4 the calibration's, 23:8 transactions started
 entity hyperram_core is
     generic(
@@ -86,6 +93,7 @@ entity hyperram_core is
         g_phase_steps        : natural := 0;
         g_min_window         : positive := 1;         -- steps
         g_phase_timeout      : positive := 50000;     -- clocks for a step's phase_shift_done
+        g_cal_attempts       : positive := 1;         -- sweeps, until the chosen step verifies
         g_word_count_start   : natural := 0           -- simulation: the word counters' start, to test their wrap
     );
     port(
@@ -174,7 +182,8 @@ architecture rtl of hyperram_core is
                                 wait_words, next_setting, choose,
                                 -- relative phase
                                 r_settle, r_test, r_test_wait, r_record, r_step, r_wait_step,
-                                r_choose, r_finish);
+                                r_choose, r_seek_settle, r_seek_test, r_seek_wait, r_seek_eval,
+                                r_finish, r_verify, r_verify_wait);
     signal calibration_state : calibration_states := write_die_0;
     signal setting       : natural range 0 to 15 := 0;      -- lo first = setting/8, phase = setting mod 8
     signal cal_timer     : natural range 0 to g_settle_clocks := 0;
@@ -214,6 +223,16 @@ architecture rtl of hyperram_core is
     signal start_hi, start_lo : natural range 0 to steps - 1 := 0;
     signal best_len      : natural range 0 to steps := 0;
     signal other_len     : natural range 0 to steps := 0;
+    signal attempts      : natural range 0 to 15 := 0;     -- sweeps made
+    signal verified      : boolean := false;
+    -- the previous sweep's choice, for the agreement of two
+    -- the seek: 0 out of the window, 1 through it (its width), 2 round and half into it
+    signal seek_phase    : natural range 0 to 2 := 0;
+    signal seek_pass     : natural range 0 to steps := 0;
+    signal seek_fail     : natural range 0 to 2 := 0;
+    signal seek_width    : natural range 0 to steps := 0;
+    signal seek_total    : natural range 0 to 4*steps := 0;
+    signal seek_lost     : boolean := false;
     -- the reset (the PLL not locked, asynchronous) through two registers, so every register
     -- here sees it at the same clock
     signal reset_sync : std_logic_vector(1 downto 0) := "11";
@@ -293,7 +312,7 @@ begin
     status <= x"0" & to_std(lo_first) & std_logic_vector(to_unsigned(read_phase, 3))
               & pass_map(15 downto 8) & pass_map(7 downto 0) & "000000" & to_std(cal_failed) & to_std(calibrated)
               when not relative else
-              x"0" & to_unsigned_8(other_len) & to_unsigned_8(best_len) & to_unsigned_8(pos)
+              std_logic_vector(to_unsigned(attempts, 4)) & to_unsigned_8(other_len) & to_unsigned_8(best_len) & to_unsigned_8(pos)
               & to_std(step_timed_out) & to_std(lo_first) & to_std(cal_failed) & to_std(calibrated);
     read_timeouts <= timeouts;
     core_debug <= std_logic_vector(transactions)
@@ -400,6 +419,7 @@ begin
                                     swept      <= 0;
                                     walking    <= false;
                                     cal_timer  <= 0;
+                                    attempts   <= 1;
                                     calibration_state <= r_settle;
                                 else
                                     calibration_state <= set_phase;
@@ -466,13 +486,7 @@ begin
                                     end if;
                                     cal_timer <= 0;
                                     if walking then
-                                        if walk_left <= 1 then
-                                            walk_left <= 0;
-                                            calibration_state <= r_finish;
-                                        else
-                                            walk_left <= walk_left - 1;
-                                            calibration_state <= r_step;
-                                        end if;
+                                        calibration_state <= r_seek_settle;
                                     elsif swept = steps - 1 then
                                         swept <= steps;
                                         scan  <= 0;
@@ -517,41 +531,177 @@ begin
                                     end if;
                                     scan <= scan + 1;
                                 else
-                                    -- the wider window's middle (the hi half first on a tie), walked
-                                    -- to from here; nothing passed: stay, the default order
+                                    -- the wider window's order (the hi half first on a tie); its
+                                    -- step found by the seek. Nothing passed: no seek, the default
+                                    -- order, failed
                                     if len_lo > len_hi then
                                         best_len      <= len_lo;
                                         other_len     <= len_hi;
                                         best_lo_first <= true;
-                                        target := (start_lo + (len_lo - 1) / 2) mod steps;
-                                    elsif len_hi > 0 then
+                                        lo_first      <= true;
+                                    else
                                         best_len      <= len_hi;
                                         other_len     <= len_lo;
-                                        best_lo_first <= false;
-                                        target := (start_hi + (len_hi - 1) / 2) mod steps;
-                                    else
-                                        best_len      <= 0;
-                                        other_len     <= 0;
-                                        best_lo_first <= g_default_lo_first;
-                                        target := pos;
+                                        best_lo_first <= len_hi = 0 and g_default_lo_first;
+                                        lo_first      <= len_hi = 0 and g_default_lo_first;
                                     end if;
-                                    walk_left <= (target + steps - pos) mod steps;
-                                    walking   <= true;
-                                    cal_timer <= 0;
-                                    if target = pos then
+                                    cal_timer  <= 0;
+                                    seek_phase <= 0;
+                                    seek_pass  <= 0;
+                                    seek_fail  <= 0;
+                                    seek_total <= 0;
+                                    seek_lost  <= false;
+                                    walking    <= true;
+                                    if len_lo = 0 and len_hi = 0 then
                                         calibration_state <= r_finish;
                                     else
-                                        calibration_state <= r_step;
+                                        calibration_state <= r_seek_settle;
                                     end if;
                                 end if;
-                            WHEN r_finish =>
-                                -- after the last step's settling
+
+                            ----------------------------------------------------
+                            -- the seek: a test at every step, on down
+                            WHEN r_seek_settle =>
                                 if cal_timer < g_settle_clocks then
                                     cal_timer <= cal_timer + 1;
                                 else
-                                    lo_first   <= best_lo_first;
-                                    cal_failed <= step_timed_out or best_len < g_min_window;
+                                    cal_ok <= true;
+                                    test   <= 0;
+                                    calibration_state <= r_seek_test;
+                                end if;
+                            WHEN r_seek_test =>
+                                if test_list(test).die_1 then
+                                    start(false, true, to_unsigned(g_calibration_address_1 / 2 + test_list(test).index, 25),
+                                          test_list(test).words);
+                                else
+                                    start(false, true, to_unsigned(g_calibration_address_0 / 2 + test_list(test).index, 25),
+                                          test_list(test).words);
+                                end if;
+                                cal_expect <= test_list(test).index;
+                                cal_left   <= test_list(test).words;
+                                calibration_state <= r_seek_wait;
+                            WHEN r_seek_wait =>
+                                if cal_left = 0 then
+                                    if test < tests - 1 then
+                                        test <= test + 1;
+                                        calibration_state <= r_seek_test;
+                                    else
+                                        calibration_state <= r_seek_eval;
+                                    end if;
+                                end if;
+                            WHEN r_seek_eval =>
+                                calibration_state <= r_step;
+                                cal_timer <= 0;
+                                if seek_total < 4*steps then
+                                    seek_total <= seek_total + 1;
+                                else
+                                    -- never found: give up here
+                                    seek_lost <= true;
+                                    calibration_state <= r_finish;
+                                end if;
+                                CASE seek_phase is
+                                    WHEN 0 =>
+                                        -- out of the window: two fails in a row
+                                        if not cal_ok then
+                                            if seek_fail = 1 then
+                                                seek_fail  <= 0;
+                                                seek_pass  <= 0;
+                                                seek_phase <= 1;
+                                            else
+                                                seek_fail <= 1;
+                                            end if;
+                                        else
+                                            seek_fail <= 0;
+                                        end if;
+                                    WHEN 1 =>
+                                        -- through it: its passes, until two fails in a row
+                                        if cal_ok then
+                                            if seek_pass < steps then
+                                                seek_pass <= seek_pass + 1;
+                                            end if;
+                                            seek_fail <= 0;
+                                        elsif seek_pass > 0 then
+                                            if seek_fail = 1 then
+                                                -- a run shorter than g_min_window is a stray
+                                                -- pass outside the window: on to the window
+                                                if seek_pass >= g_min_window then
+                                                    seek_width <= seek_pass;
+                                                    best_len   <= seek_pass;
+                                                    seek_phase <= 2;
+                                                end if;
+                                                seek_fail  <= 0;
+                                                seek_pass  <= 0;
+                                            else
+                                                seek_fail <= 1;
+                                            end if;
+                                        end if;
+                                    WHEN 2 =>
+                                        -- round to it again, half its width into it
+                                        if cal_ok then
+                                            seek_fail <= 0;
+                                            if seek_pass + 1 >= maximum(seek_width / 2, 1) then
+                                                calibration_state <= r_finish;
+                                            else
+                                                seek_pass <= seek_pass + 1;
+                                            end if;
+                                        elsif seek_pass > 0 then
+                                            -- a fail on the way in: count again from the edge
+                                            if seek_fail = 1 then
+                                                seek_fail <= 0;
+                                                seek_pass <= 0;
+                                            else
+                                                seek_fail <= 1;
+                                            end if;
+                                        end if;
+                                END CASE;
+                            WHEN r_finish =>
+                                -- after the last step's settling, the chosen order; then the
+                                -- check of the chosen step (not after a step not acknowledged)
+                                if cal_timer < g_settle_clocks then
+                                    cal_timer <= cal_timer + 1;
+                                    lo_first  <= best_lo_first;
+                                elsif step_timed_out or best_len = 0 or seek_lost then
+                                    cal_failed <= true;
                                     calibrated <= true;
+                                else
+                                    cal_ok <= true;
+                                    test   <= 0;
+                                    calibration_state <= r_verify;
+                                end if;
+                            WHEN r_verify =>
+                                if test_list(test).die_1 then
+                                    start(false, true, to_unsigned(g_calibration_address_1 / 2 + test_list(test).index, 25),
+                                          test_list(test).words);
+                                else
+                                    start(false, true, to_unsigned(g_calibration_address_0 / 2 + test_list(test).index, 25),
+                                          test_list(test).words);
+                                end if;
+                                cal_expect <= test_list(test).index;
+                                cal_left   <= test_list(test).words;
+                                calibration_state <= r_verify_wait;
+                            WHEN r_verify_wait =>
+                                if cal_left = 0 then
+                                    if test < tests - 1 then
+                                        test <= test + 1;
+                                        calibration_state <= r_verify;
+                                    elsif cal_ok then
+                                        verified   <= true;
+                                        cal_failed <= best_len < g_min_window;
+                                        calibrated <= true;
+                                    elsif attempts < g_cal_attempts then
+                                        -- the clock is not where the steps say: sweep again
+                                        -- from here (the map is of positions from here on)
+                                        attempts  <= attempts + 1;
+                                        pos       <= 0;
+                                        swept     <= 0;
+                                        walking   <= false;
+                                        lo_first  <= false;
+                                        cal_timer <= 0;
+                                        calibration_state <= r_settle;
+                                    else
+                                        cal_failed <= true;
+                                        calibrated <= true;
+                                    end if;
                                 end if;
                             WHEN set_phase =>
                                 read_phase <= setting mod 8;
@@ -770,6 +920,9 @@ begin
                 step_timed_out    <= false;
                 best_len          <= 0;
                 other_len         <= 0;
+                attempts          <= 0;
+                verified          <= false;
+                seek_lost         <= false;
                 done_seen         <= done_sync(2);
                 if relative then
                     shift_r       <= (others => '0');
