@@ -56,6 +56,11 @@ for tckd in (1.5, 3.0, 4.5):
 for ignored in (30, 60):
     core_tb.add_config(name=f"relative_ignores_{ignored}_steps",
                        generics=dict(tckd_ns=3.0, phase_steps=96, ignored_steps=ignored))
+# the PLL skips every other step at first: the seek counts too wide a window, the limit sends
+# it round again
+for skipped in (150, 300):
+    core_tb.add_config(name=f"relative_skips_early_{skipped}",
+                       generics=dict(tckd_ns=3.0, phase_steps=96, skip_early=skipped))
 # the word counters starting just below 2**31, so a run crosses it
 axi_tb.add_config(name="word_counters_wrap", generics=dict(word_count_start=2**31 - 3000))
 

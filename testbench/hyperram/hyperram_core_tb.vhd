@@ -25,9 +25,13 @@ context vunit_lib.vunit_context;
 --                after a write's latency; any other change is an error here
 --   ignored_steps  relative: the first steps acknowledged but not made (the Agilex 3 PLL right
 --                after configuration) - the calibration's check of its step must catch it
+--   skip_early     relative: of the first skip_early steps every other one acknowledged but not
+--                made - the seek then counts a window twice as wide as it is (the AXC3000 after
+--                a cold boot from flash: 71 steps for ~30) and stops off its middle; the window
+--                limit (g_max_window) must send it round again
 entity hyperram_core_tb is
   generic (runner_cfg : string; tckd_ns : real := 3.0; lo_lags : boolean := true;
-           phase_steps : natural := 0; ignored_steps : natural := 0);
+           phase_steps : natural := 0; ignored_steps : natural := 0; skip_early : natural := 0);
 end;
 
 architecture vunit_simulation of hyperram_core_tb is
@@ -111,7 +115,7 @@ begin
                 check(unsigned(phase_shift.shift) = mux - 1, "a relative phase changes only by -1");
                 mux := unsigned(phase_shift.shift);
                 requests := requests + 1;
-                if requests > ignored_steps then
+                if requests > ignored_steps and not (requests <= skip_early and requests mod 2 = 0) then
                     steps_down := (steps_down + 1) mod phase_steps;
                 end if;
                 wait for write_latency;
@@ -189,7 +193,8 @@ begin
 ------------------------------------------------------------------------
     dut : entity work.hyperram_core
     generic map(g_reset_low_clocks => 20, g_power_up_clocks => 100, g_settle_clocks => 20,
-                g_phase_steps => phase_steps, g_min_window => 8, g_cal_attempts => 3)
+                g_phase_steps => phase_steps, g_min_window => 8, g_max_window => phase_steps / 3,
+                g_cal_attempts => 3)
     port map(
         clock => hr_clock, reset => reset, in_reset => in_reset,
         command_valid => command_valid, command_ready => command_ready, command_write => command_write,
@@ -326,6 +331,8 @@ begin
                     check(status(3) = '0', "every step acknowledged");
                     check(to_integer(unsigned(status(19 downto 12))) >= 8, "a window of 8 steps or more");
                     check(to_integer(unsigned(status(19 downto 12))) < phase_steps, "a window with edges");
+                    check(to_integer(unsigned(status(19 downto 12))) <= phase_steps / 3,
+                          "a window no wider than it can be");
                 end if;
 
             elsif run("writes_and_reads_back") then

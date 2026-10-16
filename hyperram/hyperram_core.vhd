@@ -64,7 +64,9 @@ library ieee;
 -- made: two fails in a row end it; a run under g_min_window steps is a stray pass, not the
 -- window), round to it again, and half its width into it. A lost
 -- step only makes the walk longer. The step reached is tested once more; a failure starts
--- it all again, at most g_cal_attempts times. A window narrower than g_min_window
+-- it all again, at most g_cal_attempts times; so does a window wider than g_max_window (more
+-- than the data eye can be: counted on steps not made, so its middle is not where the steps
+-- say). A window narrower than g_min_window
 -- steps, a check that still fails, or a step that is not acknowledged within g_phase_timeout
 -- clocks, fails the calibration (status bit 1); the best setting found is used all the same.
 --
@@ -92,6 +94,9 @@ entity hyperram_core is
         -- of them (above)
         g_phase_steps        : natural := 0;
         g_min_window         : positive := 1;         -- steps
+        -- steps; 0: no limit. A window wider than the read clock can have (a DDR half period less
+        -- the skews) was counted on steps not made: the step it chose is not its middle
+        g_max_window         : natural := 0;
         g_phase_timeout      : positive := 50000;     -- clocks for a step's phase_shift_done
         g_cal_attempts       : positive := 1;         -- sweeps, until the chosen step verifies
         g_word_count_start   : natural := 0           -- simulation: the word counters' start, to test their wrap
@@ -144,9 +149,14 @@ architecture rtl of hyperram_core is
         if b then return '1'; else return '0'; end if;
     end function;
 
-    -- the calibration pattern, word i (as hyperram_axi's 64 bit beats had it, beat i / 4)
+    -- the calibration pattern, word i (as hyperram_axi's 64 bit beats had it, beat i / 4).
+    -- Words 2..17: each DQ line against the other seven - the byte with only line n high next
+    -- to its complement, in both orders (bytes ~m m, then m ~m): line n rises while seven fall,
+    -- then falls while they rise. The worst case of switching noise and crosstalk; a read clock
+    -- phase near the eye's edge fails on it first (seen on the AXC3000: DQ6 at 0x40 after 0xBF).
     function pattern_word(i : natural) return std_logic_vector is
         variable r : std_logic_vector(15 downto 0);
+        variable m : std_logic_vector(7 downto 0);
     begin
         r := std_logic_vector(to_unsigned((i * 40503 + 12345) mod 65536, 16));
         -- alternating bits on the first words, every DQ toggles
@@ -154,6 +164,13 @@ architecture rtl of hyperram_core is
             r := x"AA55";
         elsif i = 1 then
             r := x"55AA";
+        elsif i < 18 then
+            m := std_logic_vector(shift_left(to_unsigned(1, 8), (i - 2) / 2));
+            if i mod 2 = 0 then
+                r := not m & m;
+            else
+                r := m & not m;
+            end if;
         end if;
         return r;
     end function;
@@ -690,12 +707,13 @@ begin
                                                 if test < tests - 1 then
                                                     test <= test + 1;
                                                     calibration_state <= r_verify;
-                                                elsif cal_ok then
+                                                elsif cal_ok and (g_max_window = 0 or best_len <= g_max_window) then
                                                     verified   <= true;
                                                     cal_failed <= best_len < g_min_window;
                                                     calibrated <= true;
                                                 elsif attempts < g_cal_attempts then
-                                                    -- the clock is not where the steps say: sweep again
+                                                    -- the clock is not where the steps say (the check failed,
+                                                    -- or the window was wider than it can be): sweep again
                                                     -- from here (the map is of positions from here on)
                                                     attempts  <= attempts + 1;
                                                     pos       <= 0;

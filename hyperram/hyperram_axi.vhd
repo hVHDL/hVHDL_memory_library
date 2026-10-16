@@ -46,6 +46,7 @@ entity hyperram_axi is
         g_default_lo_first   : boolean := true;
         g_phase_steps        : natural := 0;          -- relative read clock phase, see hyperram_core
         g_min_window         : positive := 1;
+        g_max_window         : natural := 0;
         g_phase_timeout      : positive := 50000;
         g_cal_attempts       : positive := 1;
         g_word_count_start   : natural := 0           -- simulation: the word counters' start, to test their wrap
@@ -217,7 +218,8 @@ begin
         g_recovery_clocks => g_recovery_clocks, g_settle_clocks => g_settle_clocks,
         g_calibration_address_0 => g_calibration_address_0, g_calibration_address_1 => g_calibration_address_1,
         g_default_phase => g_default_phase, g_default_lo_first => g_default_lo_first,
-        g_phase_steps => g_phase_steps, g_min_window => g_min_window, g_phase_timeout => g_phase_timeout,
+        g_phase_steps => g_phase_steps, g_min_window => g_min_window, g_max_window => g_max_window,
+        g_phase_timeout => g_phase_timeout,
         g_cal_attempts => g_cal_attempts,
         g_word_count_start => g_word_count_start)
     port map(
