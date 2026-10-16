@@ -12,6 +12,14 @@ arch_rtl_* files are the synthesis architectures of the dual port ram (one to ch
 arch_sim_* the simulation one. Their testbenches are in testbench/dual_port_ram and
 testbench/multi_port_ram.
 
+vhdl2008/sdp_ram_w_configurable_records.vhd : the simple dual port ram (entity
+simple_dual_port_ram), one port that only writes and one that only reads, with the same records
+and procedures. Synthesis maps it to the block RAMs' simple dual port mode, twice as wide as the
+true dual port mode dual_port_ram gets (Efinix Titanium: 512 x 20 against 1024 x 10), so a ram
+written on one port and read on the other takes about half the blocks. multi_port_ram is built
+of them (a copy per read port, each written by the write port). Its testbench is in
+testbench/simple_dual_port_ram.
+
 ## hyperram
 
 hyperram/hyperram_core.vhd : a HyperRAM (W959D8NFYA, x8, two dies) controller with a native

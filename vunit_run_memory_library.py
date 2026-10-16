@@ -22,6 +22,13 @@ mpram_tb.add_config(name="no_output_register", generics=dict(g_output_register=F
 
 ram_wo_generic_packages.add_source_files(ROOT / "testbench/multi_port_ram/multi_pumped_mpram_tb.vhd")
 
+# the simple dual port ram, a write port and a read port (vhdl2008/sdp_ram_w_configurable_records.vhd)
+ram_wo_generic_packages.add_source_files(ROOT / "vhdl2008/sdp_ram_w_configurable_records.vhd")
+ram_wo_generic_packages.add_source_files(ROOT / "testbench/simple_dual_port_ram/simple_dual_port_ram_tb.vhd")
+sdp_tb = ram_wo_generic_packages.test_bench("simple_dual_port_ram_tb")
+sdp_tb.add_config(name="output_register", generics=dict(g_output_register=True))
+sdp_tb.add_config(name="no_output_register", generics=dict(g_output_register=False))
+
 # HyperRAM (W959D8NFYA, two dies) behind an AXI3 port, with the memory's model
 hyperram = VU.add_library("hyperram")
 hyperram.add_source_files(ROOT / "vhdl2008/dp_ram_w_configurable_records.vhd")

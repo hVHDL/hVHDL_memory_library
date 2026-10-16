@@ -383,7 +383,7 @@ library ieee;
 entity multi_port_ram is
     generic(
         initial_values : work.dual_port_ram_pkg.ram_array
-        -- dual_port_ram's : true, a read takes 2 clocks ; false, 1 clock
+        -- simple_dual_port_ram's : true, a read takes 2 clocks ; false, 1 clock
         ;g_output_register : boolean := true);
     port (
         clock         : in std_logic
@@ -405,22 +405,20 @@ architecture single_write of multi_port_ram is
     signal ram_a_in  : ram_in_array(ram_read_in'range)(address(address_range_ref'range), data(initial_values(0)'range));
     signal ram_a_out : ram_out_array(ram_read_in'range)(data(initial_values(0)'range));
     signal ram_b_in  : ram_a_in'subtype;
-    signal dummy_ram_b_out : ram_a_out'subtype;
 
 begin
 
+    -- a copy of the contents per read port, each written by the one write port: a simple
+    -- dual port ram each (half the blocks of a true dual port one, sdp_ram_w_configurable_records.vhd)
     create_rams :
     for i in ram_read_in'range generate
-        u_dpram : entity work.dual_port_ram
+        u_dpram : entity work.simple_dual_port_ram
         generic map(dp_ram_subtype, initial_values, g_output_register)
         port map(
-        clock        
-        ,ram_a_in(i)  
-        ,ram_a_out(i) 
-        --------------
-        ,ram_b_in(i)
-        
-        ,dummy_ram_b_out(i)); -- not connected to anything
+        clock
+        ,write_in => ram_b_in(i)
+        ,read_in  => ram_a_in(i)
+        ,read_out => ram_a_out(i));
 
         ram_a_in(i) <= (
             address            => ram_read_in(i).address
