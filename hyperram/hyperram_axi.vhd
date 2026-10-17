@@ -85,6 +85,9 @@ entity hyperram_axi is
         calibration_passed : out boolean;
         status             : out std_logic_vector(31 downto 0);
         read_timeouts      : out unsigned(15 downto 0);
+        -- the core's calibration pass map, a step at a time (hyperram_core)
+        map_index          : in natural range 0 to 255 := 0;
+        map_bits           : out std_logic_vector(1 downto 0);
         -- bits 3:0 the core's state, 7:4 the calibration's, 10:8 commands queued, 11 the head
         -- one is a write, 12 it waits for its data, 13 a read waits for room, 31:16
         -- transactions started (low 16 bits), 47:32 write beats buffered, 63:48 read beats
@@ -232,6 +235,7 @@ begin
         done => core_done,
         calibration_done => calibrated, calibration_passed => calibration_passed,
         status => status, read_timeouts => read_timeouts, core_debug => core_debug,
+        map_index => map_index, map_bits => map_bits,
         phase_shift => phase_shift, phase_shift_output => phase_shift_output,
         phase_shift_done => phase_shift_done,
         fpga_out => fpga_out, fpga_in => fpga_in);

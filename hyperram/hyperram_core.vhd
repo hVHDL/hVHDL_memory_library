@@ -126,6 +126,10 @@ entity hyperram_core is
         status             : out std_logic_vector(31 downto 0);
         read_timeouts      : out unsigned(15 downto 0);
         core_debug         : out std_logic_vector(23 downto 0);
+        -- relative phase: the last sweep's pass map, a step at a time (debug):
+        -- map_bits(1) step map_index passed with the hi half first, (0) lo first
+        map_index          : in natural range 0 to 255 := 0;
+        map_bits           : out std_logic_vector(1 downto 0);
 
         phase_shift        : out pll_phase_shift_record;
         phase_shift_output : in natural range 0 to 4 := 3;   -- PLL output of the read clock
@@ -332,6 +336,8 @@ begin
               std_logic_vector(to_unsigned(attempts, 4)) & to_unsigned_8(other_len) & to_unsigned_8(best_len) & to_unsigned_8(pos)
               & to_std(step_timed_out) & to_std(lo_first) & to_std(cal_failed) & to_std(calibrated);
     read_timeouts <= timeouts;
+    map_bits <= pass_hi(map_index mod steps) & pass_lo(map_index mod steps);
+
     core_debug <= std_logic_vector(transactions)
                   & std_logic_vector(to_unsigned(calibration_states'pos(calibration_state), 4))
                   & std_logic_vector(to_unsigned(core_states'pos(core_state), 4));
